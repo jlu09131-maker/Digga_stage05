@@ -1,0 +1,51 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Earnings | Digga{% endblock %}
+
+{% block content %}
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-lowest flex flex-col py-8 z-40 border-r border-outline-variant/10">
+    <div class="text-xl font-black text-primary-container px-6 mb-10 font-headline tracking-tighter uppercase">Digga</div>
+    <div class="px-4 mb-8"><div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/10"><div class="w-10 h-10 rounded-full bg-primary-container/15 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-primary-container">person</span></div><div class="min-w-0"><p id="driverName" class="text-sm font-bold font-headline text-on-surface truncate">Loading…</p><p class="text-[0.65rem] uppercase tracking-widest text-on-surface-variant">Verified Operator</p></div></div></div>
+    <nav class="flex-1 space-y-1 px-4">
+        <a href="/driver/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">dashboard</span>Dashboard</a>
+        <a href="/request/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">calendar_month</span>Requests</a>
+        <a href="/earning/" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/10 text-primary-container border-r-4 border-primary-container font-medium text-sm transition-all"><span class="material-symbols-outlined text-sm">payments</span>Earnings</a>
+        <a href="/driver/vehicle/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">trolley</span>My Vehicle</a>
+    </nav>
+    <div class="px-4 mt-auto pt-8 border-t border-outline-variant/10"><button id="logoutBtn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:opacity-75 transition-all text-sm font-medium w-full"><span class="material-symbols-outlined text-sm">logout</span>Logout</button></div>
+</aside>
+
+<main class="ml-64 p-8 min-h-screen">
+    <header class="mb-10"><span class="text-[0.6875rem] uppercase tracking-[0.2em] text-on-surface-variant">Driver Portal</span><h1 class="text-5xl font-headline font-bold tracking-tight text-on-surface mt-1 leading-tight">My <span class="text-primary-container">Earnings</span></h1><p class="text-on-surface-variant text-sm mt-2">Track your completed rides and total income.</p></header>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group"><span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-primary-container opacity-10 group-hover:opacity-20 transition-opacity">payments</span><p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-3">Total Earned</p><p id="totalEarned" class="text-3xl font-headline font-bold text-primary-container">₹—</p></div>
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group"><span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-green-400 opacity-10 group-hover:opacity-20 transition-opacity">check_circle</span><p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-3">Completed Rides</p><p id="completedCount" class="text-3xl font-headline font-bold text-green-400">—</p></div>
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group"><span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-secondary opacity-10 group-hover:opacity-20 transition-opacity">star</span><p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-3">Avg. Rating</p><p id="avgRating" class="text-3xl font-headline font-bold text-secondary">—</p></div>
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group"><span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-yellow-400 opacity-10 group-hover:opacity-20 transition-opacity">route</span><p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-3">Total Rides</p><p id="totalRides" class="text-3xl font-headline font-bold text-yellow-400">—</p></div>
+    </div>
+    <div class="glass-card rounded-2xl border border-outline-variant/10 overflow-hidden"><div class="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center"><h2 class="font-headline font-bold text-on-surface">Completed Rides</h2><button onclick="loadEarnings()" class="text-xs text-primary-container hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-xs">refresh</span>Refresh</button></div><div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-surface-container-high"><tr><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">Booking ID</th><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">Route</th><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">User</th><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">Status</th><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">Earned</th><th class="px-5 py-3 text-left text-[10px] text-on-surface-variant uppercase tracking-wider">Date</th></tr></thead><tbody id="earningsTbody" class="divide-y divide-outline-variant/10"><tr><td colspan="6" class="text-center py-10 text-on-surface-variant"><div class="spinner mx-auto mb-3"></div>Loading…</td></tr></tbody></table></div></div>
+</main>
+
+<script>
+requireAuth(["Driver"]);
+document.getElementById("driverName").textContent = localStorage.getItem("user_name") || "Driver";
+document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+async function loadEarnings() {
+    const tbody = document.getElementById("earningsTbody");
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-on-surface-variant"><div class="spinner mx-auto mb-3"></div>Loading…</td></tr>`;
+    const [allRes, completedRes, ratingsRes] = await Promise.all([fetchWithAuth("/api/bookings/"), fetchWithAuth("/api/bookings/?status=completed"), fetchWithAuth("/api/ratings/")]);
+    const allBookings  = await safeJson(allRes);
+    const completed    = await safeJson(completedRes);
+    const ratings      = await safeJson(ratingsRes);
+    const totalEarned = Array.isArray(completed) ? completed.reduce((s, b) => s + parseFloat(b.total_amount || 0), 0) : 0;
+    document.getElementById("totalEarned").textContent    = `₹${totalEarned.toFixed(2)}`;
+    document.getElementById("completedCount").textContent = Array.isArray(completed) ? completed.length : "—";
+    document.getElementById("totalRides").textContent     = Array.isArray(allBookings) ? allBookings.length : "—";
+    if (Array.isArray(ratings) && ratings.length) { const avg = ratings.reduce((s, r) => s + r.rating_value, 0) / ratings.length; document.getElementById("avgRating").textContent = `${avg.toFixed(1)} ★`; } else { document.getElementById("avgRating").textContent = "N/A"; }
+    if (!Array.isArray(completed) || !completed.length) { tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-on-surface-variant text-sm">No completed rides yet.</td></tr>`; return; }
+    tbody.innerHTML = completed.map(b => `<tr class="hover:bg-surface-container-high/30 transition-colors"><td class="px-5 py-3 text-sm font-mono">#${b.booking_id}</td><td class="px-5 py-3 text-xs text-on-surface-variant max-w-[180px]"><div class="truncate">${b.pickup_location}</div><div class="flex items-center gap-1 text-on-surface-variant/60"><span class="material-symbols-outlined text-xs">arrow_forward</span><span class="truncate">${b.drop_location}</span></div></td><td class="px-5 py-3 text-sm">${b.user_name || "—"}</td><td class="px-5 py-3">${statusBadge(b.status)}</td><td class="px-5 py-3 text-sm font-headline font-bold text-primary-container">₹${parseFloat(b.total_amount || 0).toFixed(2)}</td><td class="px-5 py-3 text-xs text-on-surface-variant">${b.created_at ? new Date(b.created_at).toLocaleDateString() : "—"}</td></tr>`).join("");
+}
+loadEarnings();
+</script>
+{% endblock %}

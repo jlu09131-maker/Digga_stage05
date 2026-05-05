@@ -1,0 +1,164 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Digga | Book Heavy Vehicles Instantly{% endblock %}
+
+{% block content %}
+<header class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/15 shadow-[0_0_40px_rgba(0,240,255,0.06)] flex justify-between items-center px-6 py-4">
+    <div class="flex items-center gap-8">
+        <span class="text-2xl font-bold tracking-tighter text-primary-container font-headline">Digga</span>
+        <nav class="hidden md:flex gap-6 text-sm">
+            <a href="/"          class="font-headline text-primary-container border-b-2 border-primary-container pb-1">Home</a>
+            <a href="/vehicles/" class="font-headline text-on-surface-variant hover:text-primary-container transition-colors">Fleet</a>
+            <a href="/booking-live/" class="font-headline text-on-surface-variant hover:text-primary-container transition-colors">Live Map</a>
+        </nav>
+    </div>
+    <div class="flex items-center gap-3" id="headerActions">
+        <a href="/login-page/" class="px-4 py-2 border border-outline-variant/30 rounded-lg text-sm text-on-surface-variant hover:text-white hover:border-primary-container transition-all">Login</a>
+        <a href="/register/"   class="px-4 py-2 bg-primary-container text-on-primary rounded-lg text-sm font-bold hover:brightness-110 active:scale-95 transition-all">Get Started</a>
+    </div>
+</header>
+
+<main class="pt-20">
+    <section class="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
+        <div class="bg-titanium-flux">
+            <div class="flux-orb w-[60vw] h-[60vw] bg-blue-900/50 top-0 left-0"></div>
+            <div class="flux-orb w-[50vw] h-[50vw] bg-purple-900/40 bottom-0 right-0" style="animation-delay:-5s"></div>
+        </div>
+
+        <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+            <div class="lg:col-span-7 flex flex-col items-start gap-6">
+                <div class="flex items-center gap-2 bg-secondary-container/20 px-3 py-1 rounded-full border border-secondary/20">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span></span>
+                    <span class="text-[10px] uppercase tracking-widest text-secondary font-medium">
+                        <span id="liveCount">—</span> Units Available Live
+                    </span>
+                </div>
+                <h1 class="font-headline text-[3.5rem] md:text-[5rem] leading-[0.9] font-bold tracking-tighter text-on-surface">
+                    Book Heavy <br/><span class="text-primary-container text-glow">Vehicles Instantly</span>
+                </h1>
+                <p class="font-body text-lg text-on-surface-variant max-w-xl leading-relaxed">
+                    Precision logistics meets industrial power. Access a fleet of certified operators and heavy machinery with one tap.
+                </p>
+                <div class="flex gap-4 mt-4 flex-wrap">
+                    <a href="/vehicles/" class="px-8 py-4 bg-primary-container text-on-primary font-bold rounded-xl active:scale-95 transition-transform shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:brightness-110">Explore Fleet</a>
+                    <a href="/booking-live/" class="px-8 py-4 glass-panel hud-border text-primary font-bold rounded-xl active:scale-95 transition-transform hover:bg-surface-container-high">Book Now</a>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5">
+                <div class="glass-panel p-8 rounded-2xl hud-border">
+                    <h3 class="font-headline text-2xl font-bold mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container">speed</span> Quick Booking
+                    </h3>
+                    <form id="quickForm" class="space-y-4">
+                        <div>
+                            <label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1 block">Pickup Location</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">location_on</span>
+                                <input id="qPickup" type="text" placeholder="Site address or depot"
+                                       class="w-full bg-surface-container-highest/40 border border-outline-variant/30 rounded-lg py-3 pl-10 pr-4 text-on-surface outline-none focus:border-primary-container transition-colors text-sm placeholder:text-on-surface-variant/40">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1 block">Drop Location</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">flag</span>
+                                <input id="qDrop" type="text" placeholder="Work site location"
+                                       class="w-full bg-surface-container-highest/40 border border-outline-variant/30 rounded-lg py-3 pl-10 pr-4 text-on-surface outline-none focus:border-primary-container transition-colors text-sm placeholder:text-on-surface-variant/40">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1 block">Vehicle Type</label>
+                            <select id="qVehicle"
+                                    class="w-full bg-surface-container-highest/40 border border-outline-variant/30 rounded-lg py-3 px-4 text-on-surface outline-none focus:border-primary-container transition-colors text-sm appearance-none">
+                                <option value="">— Select available unit —</option>
+                            </select>
+                        </div>
+                        <button type="submit"
+                                class="w-full py-4 bg-gradient-to-r from-primary-fixed-dim to-primary-container text-on-primary font-black rounded-xl text-base tracking-tight active:scale-95 transition-all shadow-[0_0_30px_rgba(0,240,255,0.15)] flex items-center justify-center gap-2">
+                            <span id="qBtnText">BOOK NOW</span>
+                            <span id="qSpinner" class="spinner hidden"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="text-center mb-20">
+            <span class="text-[10px] uppercase tracking-[0.3em] text-primary-container font-bold">Why Digga</span>
+            <h2 class="font-headline text-[2.75rem] font-bold tracking-tight mt-3">The Industrial Standard</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="group bg-surface-container-high/60 glass-panel p-10 rounded-2xl transition-all duration-500 hover:bg-surface-container-high/80">
+                <div class="mb-8 w-16 h-16 rounded-xl bg-primary-container/10 flex items-center justify-center border border-primary-container/20 group-hover:bg-primary-container/20 transition-all">
+                    <span class="material-symbols-outlined text-primary-container text-3xl" style="font-variation-settings:'FILL' 1">sensors</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Real-time Tracking</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">Monitor GPS coordinates with centimeter-level precision via our live dashboard.</p>
+            </div>
+            <div class="group bg-surface-container-high/60 glass-panel p-10 rounded-2xl transition-all duration-500 hover:bg-surface-container-high/80">
+                <div class="mb-8 w-16 h-16 rounded-xl bg-secondary-container/10 flex items-center justify-center border border-secondary-container/20 group-hover:bg-secondary-container/20 transition-all">
+                    <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings:'FILL' 1">verified_user</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Certified Operators</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">Every Digga professional is background-checked with premium tier certifications.</p>
+            </div>
+            <div class="group bg-surface-container-high/60 glass-panel p-10 rounded-2xl transition-all duration-500 hover:bg-surface-container-high/80">
+                <div class="mb-8 w-16 h-16 rounded-xl bg-primary-container/10 flex items-center justify-center border border-primary-container/20 group-hover:bg-primary-container/20 transition-all">
+                    <span class="material-symbols-outlined text-primary-container text-3xl" style="font-variation-settings:'FILL' 1">bolt</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Instant Booking</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">From JCBs to 100-ton cranes — book and deploy in minutes, not days.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="w-full py-12 px-6 bg-surface-container-lowest border-t border-outline-variant/10">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        <span class="text-primary-container font-bold text-2xl font-headline tracking-tighter">Digga</span>
+        <p class="text-on-surface-variant text-xs uppercase tracking-widest">© 2024 Digga Industrial. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+const token = localStorage.getItem("access_token");
+const role  = localStorage.getItem("user_role");
+if (token) {
+    const ha = document.getElementById("headerActions");
+    const dest = role === "Admin" ? "/admin-dash/" : role === "Driver" ? "/driver/" : "/user/";
+    ha.innerHTML = `<a href="${dest}" class="px-4 py-2 bg-primary-container text-on-primary rounded-lg text-sm font-bold hover:brightness-110 active:scale-95 transition-all">My Dashboard</a>`;
+}
+
+async function loadLiveData() {
+    try {
+        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+        const res = await fetch("/api/vehicles/?status=available", { headers });
+        if (!res.ok) return;
+        const vehicles = await res.json();
+        document.getElementById("liveCount").textContent = vehicles.length;
+        const select = document.getElementById("qVehicle");
+        vehicles.forEach(v => select.add(new Option(`${v.vehicle_type} · ₹${v.price_per_km}/km`, v.vehicle_id)));
+    } catch {}
+}
+
+document.getElementById("quickForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!token) { showToast("Please login first.", "info"); setTimeout(() => window.location.replace("/login-page/"), 800); return; }
+    const pickup = document.getElementById("qPickup").value.trim();
+    const drop   = document.getElementById("qDrop").value.trim();
+    const vid    = document.getElementById("qVehicle").value;
+    if (!pickup || !drop || !vid) { showToast("Please fill all fields.", "warning"); return; }
+    const btn = document.getElementById("qBtnText"); const sp = document.getElementById("qSpinner");
+    btn.textContent = "Booking…"; sp.classList.remove("hidden");
+    const res = await fetchWithAuth("/api/bookings/", { method: "POST", body: JSON.stringify({ vehicle: parseInt(vid), pickup_location: pickup, drop_location: drop }) });
+    const d   = await safeJson(res);
+    btn.textContent = "BOOK NOW"; sp.classList.add("hidden");
+    res.ok ? (showToast("Booking created! Redirecting…", "success"), setTimeout(() => window.location.replace("/user/"), 1000)) : showToast(d.detail || "Booking failed.", "error");
+});
+
+loadLiveData();
+</script>
+{% endblock %}

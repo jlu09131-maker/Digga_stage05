@@ -1,0 +1,23 @@
+# Core
+Django==4.2.13
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+# Database
+PyMySQL==1.1.0
+cryptography==41.0.7         # Required by PyMySQL for caching_sha2_password
+
+# API tooling
+drf-yasg==1.21.7
+
+# Env management
+python-dotenv==1.0.0
+
+# Security / CORS
+django-cors-headers==4.3.1
+
+# Static files for production
+whitenoise==6.6.0
+
+# Production WSGI server
+gunicorn==21.2.0

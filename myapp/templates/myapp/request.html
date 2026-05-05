@@ -1,0 +1,52 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Booking Requests | Digga{% endblock %}
+
+{% block content %}
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-lowest flex flex-col py-8 z-40 border-r border-outline-variant/10">
+    <div class="text-xl font-black text-primary-container px-6 mb-10 font-headline tracking-tighter uppercase">Digga</div>
+    <div class="px-4 mb-8"><div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/10"><div class="w-10 h-10 rounded-full bg-primary-container/15 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-primary-container">person</span></div><div class="min-w-0"><p id="driverName" class="text-sm font-bold font-headline text-on-surface truncate">Loading…</p><p class="text-[0.65rem] uppercase tracking-widest text-on-surface-variant">Verified Operator</p></div></div></div>
+    <nav class="flex-1 space-y-1 px-4">
+        <a href="/driver/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">dashboard</span>Dashboard</a>
+        <a href="/request/" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/10 text-primary-container border-r-4 border-primary-container font-medium text-sm transition-all"><span class="material-symbols-outlined text-sm">calendar_month</span>Requests</a>
+        <a href="/earning/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">payments</span>Earnings</a>
+        <a href="/driver/vehicle/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium"><span class="material-symbols-outlined text-sm">trolley</span>My Vehicle</a>
+    </nav>
+    <div class="px-4 mt-auto pt-8 border-t border-outline-variant/10"><button id="logoutBtn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:opacity-75 transition-all text-sm font-medium w-full"><span class="material-symbols-outlined text-sm">logout</span>Logout</button></div>
+</aside>
+
+<main class="ml-64 p-8 min-h-screen">
+    <header class="flex justify-between items-end mb-10 flex-wrap gap-4">
+        <div><span class="text-[0.6875rem] uppercase tracking-[0.2em] text-on-surface-variant">Driver Portal</span><h1 class="text-5xl font-headline font-bold tracking-tight text-on-surface mt-1 leading-tight">Booking <span class="text-primary-container">Requests</span></h1><p class="text-on-surface-variant text-sm mt-2">Accept, start, and complete your ride assignments.</p></div>
+        <div class="flex items-center gap-3"><select id="statusFilter" onchange="loadRequests()" class="bg-surface-container-high border border-outline-variant/30 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary-container"><option value="">All Requests</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select><button onclick="loadRequests()" class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all text-sm"><span class="material-symbols-outlined text-sm">refresh</span>Refresh</button></div>
+    </header>
+    <div id="requestsContainer" class="space-y-4"><div class="text-center py-16 text-on-surface-variant"><div class="spinner mx-auto mb-4"></div>Loading bookings…</div></div>
+    <p class="text-center text-xs text-on-surface-variant/40 mt-8">Auto-refreshes every 30 seconds</p>
+</main>
+
+<script>
+requireAuth(["Driver"]);
+document.getElementById("driverName").textContent = localStorage.getItem("user_name") || "Driver";
+document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+async function loadRequests() {
+    const container = document.getElementById("requestsContainer");
+    const filter    = document.getElementById("statusFilter").value;
+    container.innerHTML = `<div class="text-center py-16 text-on-surface-variant"><div class="spinner mx-auto mb-4"></div>Loading…</div>`;
+    const res      = await fetchWithAuth("/api/bookings/" + (filter ? `?status=${filter}` : ""));
+    const bookings = await safeJson(res);
+    if (!Array.isArray(bookings) || !bookings.length) { container.innerHTML = `<div class="text-center py-16 text-on-surface-variant"><span class="material-symbols-outlined text-5xl block mb-3 opacity-30">inbox</span><p class="text-sm">No ${filter || ""} bookings found.</p></div>`; return; }
+    container.innerHTML = bookings.map(b => {
+        const canAccept   = b.status === "pending";
+        const canStart    = b.status === "accepted";
+        const canComplete = b.status === "ongoing";
+        return `<div class="glass-card rounded-2xl p-6 border border-outline-variant/10 flex flex-col sm:flex-row justify-between gap-6 transition-all"><div class="flex-1 min-w-0"><div class="flex items-center gap-3 mb-3"><span class="font-mono text-xs text-on-surface-variant bg-surface-container-high px-2 py-1 rounded">#${b.booking_id}</span>${statusBadge(b.status)}${b.vehicle_detail?.vehicle_type ? `<span class="text-xs text-secondary">${b.vehicle_detail.vehicle_type}</span>` : ""}</div><div class="flex items-start gap-3 mb-3"><div class="flex flex-col items-center gap-1 pt-1 flex-shrink-0"><div class="w-2 h-2 rounded-full bg-primary-container shadow-[0_0_6px_rgba(0,240,255,0.6)]"></div><div class="w-px h-6 bg-outline-variant/30"></div><span class="material-symbols-outlined text-secondary text-sm">location_on</span></div><div class="flex-1 min-w-0"><p class="text-sm font-medium text-on-surface truncate">${b.pickup_location}</p><p class="text-sm text-on-surface-variant truncate mt-2">${b.drop_location}</p></div></div><div class="flex flex-wrap gap-4 text-xs text-on-surface-variant"><span><span class="uppercase tracking-wider">User:</span> ${b.user_name || "—"}</span>${b.total_amount ? `<span class="text-primary-container font-bold">₹${parseFloat(b.total_amount).toFixed(0)}</span>` : ""}${b.created_at ? `<span>${new Date(b.created_at).toLocaleDateString()}</span>` : ""}</div></div><div class="flex flex-col gap-2 justify-center items-stretch sm:items-end min-w-[140px]">${canAccept ? `<button onclick="acceptBooking(${b.booking_id})" class="px-5 py-3 bg-primary-container text-on-primary rounded-xl text-sm font-bold hover:brightness-110 active:scale-95 transition-all whitespace-nowrap"><span class="material-symbols-outlined text-sm align-middle">check_circle</span> Accept</button>` : ""}${canStart ? `<button onclick="startBooking(${b.booking_id})" class="px-5 py-3 bg-secondary text-on-secondary rounded-xl text-sm font-bold hover:brightness-110 active:scale-95 transition-all whitespace-nowrap"><span class="material-symbols-outlined text-sm align-middle">play_circle</span> Start Ride</button>` : ""}${canComplete ? `<button onclick="completeBooking(${b.booking_id})" class="px-5 py-3 bg-green-500 text-white rounded-xl text-sm font-bold hover:brightness-110 active:scale-95 transition-all whitespace-nowrap"><span class="material-symbols-outlined text-sm align-middle">flag</span> Complete</button>` : ""}${!canAccept && !canStart && !canComplete ? `<span class="text-xs text-on-surface-variant text-center px-4">No actions available</span>` : ""}</div></div>`;
+    }).join("");
+}
+async function acceptBooking(id) { const res = await fetchWithAuth(`/api/bookings/${id}/accept/`, { method: "POST" }); const d = await safeJson(res); res.ok ? (showToast("Booking accepted!", "success"), loadRequests()) : showToast(d.detail || "Failed to accept.", "error"); }
+async function startBooking(id) { const res = await fetchWithAuth(`/api/bookings/${id}/start/`, { method: "POST" }); const d = await safeJson(res); res.ok ? (showToast("Ride started!", "success"), loadRequests()) : showToast(d.detail || "Failed to start ride.", "error"); }
+async function completeBooking(id) { const res = await fetchWithAuth(`/api/bookings/${id}/complete/`, { method: "POST" }); const d = await safeJson(res); res.ok ? (showToast("Ride completed!", "success"), loadRequests()) : showToast(d.detail || "Failed to complete.", "error"); }
+loadRequests();
+setInterval(loadRequests, 30000);
+</script>
+{% endblock %}

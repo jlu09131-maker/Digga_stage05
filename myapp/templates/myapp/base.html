@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Digga{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'myapp/css/style.css' %}">
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant":        "#3b494b",
+                        "surface-dim":            "#131313",
+                        "surface-variant":        "#353534",
+                        "primary":                "#dbfcff",
+                        "background":             "#131313",
+                        "on-background":          "#e5e2e1",
+                        "error-container":        "#93000a",
+                        "on-error-container":     "#ffdad6",
+                        "secondary-fixed-dim":    "#dcb8ff",
+                        "surface-container":      "#201f1f",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim":      "#00dbe9",
+                        "inverse-surface":        "#e5e2e1",
+                        "surface":                "#131313",
+                        "on-secondary-container": "#dcb7ff",
+                        "primary-container":      "#00f0ff",
+                        "error":                  "#ffb4ab",
+                        "outline":                "#849495",
+                        "surface-tint":           "#00dbe9",
+                        "on-surface":             "#e5e2e1",
+                        "primary-fixed":          "#7df4ff",
+                        "inverse-primary":        "#006970",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary":             "#00363a",
+                        "surface-container-highest": "#353534",
+                        "surface-container-low":  "#1c1b1b",
+                        "on-surface-variant":     "#b9cacb",
+                        "secondary":              "#dcb8ff",
+                        "secondary-container":    "#7701d0",
+                        "on-secondary":           "#480081",
+                        "on-primary-container":   "#006970",
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk", "sans-serif"],
+                        "body":     ["Inter", "sans-serif"],
+                        "label":    ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        };
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary-container selection:text-on-primary">
+
+    <div id="toast-container" aria-live="polite"></div>
+
+    {% block content %}{% endblock %}
+
+    <!-- ✅ GLOBAL SCRIPTS (must come BEFORE page-specific scripts) -->
+    <script>
+    "use strict";
+    function getCookie(name) {
+        if (!document.cookie) return null;
+        for (const raw of document.cookie.split(";")) {
+            const c = raw.trim();
+            if (c.startsWith(name + "=")) return decodeURIComponent(c.slice(name.length + 1));
+        }
+        return null;
+    }
+
+    function showToast(message, type = "info", duration = 5000) {
+        const container = document.getElementById("toast-container");
+        if (!container) { console.warn(`[${type.toUpperCase()}]`, message); return; }
+        const icons = { success: "check_circle", error: "error", info: "info", warning: "warning" };
+        const el = Object.assign(document.createElement("div"), { className: `toast ${type}` });
+        el.innerHTML = `
+            <span class="material-symbols-outlined" style="font-size:1.1rem;flex-shrink:0">${icons[type] || "info"}</span>
+            <span style="flex:1">${message}</span>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;opacity:.65;font-size:1rem;padding:0 0 0 .5rem">✕</button>`;
+        container.appendChild(el);
+        setTimeout(() => {
+            el.style.animation = "slideOut 0.3s ease forwards";
+            setTimeout(() => el.remove(), 320);
+        }, duration);
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        const token = localStorage.getItem("access_token");
+        options.headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRFToken": getCookie("csrftoken") || "",
+            ...(options.headers || {}),
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        };
+        let res = await fetch(url, options);
+        if (res.status === 401) {
+            const refresh = localStorage.getItem("refresh_token");
+            if (refresh) {
+                try {
+                    const refreshRes = await fetch("/api/token/refresh/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") || "" },
+                        body: JSON.stringify({ refresh }),
+                    });
+                    if (refreshRes.ok) {
+                        const newTokens = await refreshRes.json();
+                        localStorage.setItem("access_token", newTokens.access);
+                        options.headers["Authorization"] = `Bearer ${newTokens.access}`;
+                        res = await fetch(url, options);
+                        return res;
+                    }
+                } catch (_) { }
+            }
+            _doLogout();
+        }
+        return res;
+    }
+
+    function _doLogout() {
+        const refresh = localStorage.getItem("refresh_token");
+        ["access_token","refresh_token","user_id","user_role","user_name","user_email"]
+            .forEach(k => localStorage.removeItem(k));
+        if (refresh) {
+            fetch("/api/logout/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") || "" },
+                body: JSON.stringify({ refresh }),
+            }).catch(() => {});
+        }
+        window.location.replace("/login-page/");
+    }
+
+    function logout() {
+        _doLogout();
+    }
+    window.logout = logout;
+
+    function requireAuth(allowedRoles = null) {
+        const token = localStorage.getItem("access_token");
+        if (!token) { window.location.replace("/login-page/"); return false; }
+        if (allowedRoles) {
+            const role = localStorage.getItem("user_role");
+            if (!allowedRoles.includes(role)) {
+                showToast("Access denied for your role.", "error");
+                setTimeout(() => {
+                    const dest = role === "Admin" ? "/admin-dash/" : role === "Driver" ? "/driver/" : "/user/";
+                    window.location.replace(dest);
+                }, 1000);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function statusBadge(s) {
+        const cls = `badge-${(s || "").toLowerCase()}`;
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${cls}">${s || "—"}</span>`;
+    }
+
+    async function safeJson(res) {
+        try {
+            const text = await res.text();
+            return text ? JSON.parse(text) : {};
+        } catch {
+            return {};
+        }
+    }
+    </script>
+
+    <!-- Page-specific JavaScript goes here (now after global functions) -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

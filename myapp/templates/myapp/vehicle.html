@@ -1,0 +1,263 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Fleet Selection | Digga{% endblock %}
+
+{% block extra_head %}
+<style>
+.vehicle-card-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+.glass-card:hover .vehicle-card-img { transform: scale(1.04); }
+.driver-badge {
+    background: rgba(220,184,255,0.15);
+    border: 1px solid rgba(220,184,255,0.3);
+    color: #dcb8ff;
+}
+.cat-filter-chip {
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(59,73,75,0.35);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: #b9cacb;
+    background: rgba(32,31,31,0.6);
+    white-space: nowrap;
+}
+.cat-filter-chip:hover { border-color: rgba(0,240,255,0.4); color: #e5e2e1; }
+.cat-filter-chip.active { background: rgba(0,240,255,0.12); border-color: #00f0ff; color: #00f0ff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/15 shadow-[0_0_40px_rgba(0,240,255,0.06)] flex justify-between items-center px-6 py-4">
+    <div class="flex items-center gap-8">
+        <span class="text-2xl font-bold tracking-tighter text-primary-container font-headline">Digga</span>
+        <nav class="hidden md:flex gap-6 text-sm">
+            <a href="/"              class="font-headline text-on-surface-variant hover:text-primary-container transition-colors">Home</a>
+            <a href="/vehicles/"     class="font-headline text-primary-container border-b-2 border-primary-container pb-1">Fleet</a>
+            <a href="/booking-live/" class="font-headline text-on-surface-variant hover:text-primary-container transition-colors">Live Map</a>
+        </nav>
+    </div>
+    <div class="flex items-center gap-3">
+        <span id="headerName" class="text-sm text-on-surface-variant hidden sm:block"></span>
+        <button onclick="logout()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-error transition-all text-sm">
+            <span class="material-symbols-outlined" style="font-size:.9rem">logout</span>
+            <span class="hidden sm:block">Logout</span>
+        </button>
+    </div>
+</header>
+
+<main class="pt-24 pb-20 px-6 max-w-7xl mx-auto">
+    <section class="mb-10">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-5xl font-headline font-bold tracking-tighter text-on-background mb-2">
+                    <span id="availableCount">0</span> <span class="text-primary-container">Industrial</span> Units Available
+                </h1>
+                <p class="text-on-surface-variant max-w-xl font-body leading-relaxed">Precision-engineered heavy machinery ready for deployment.</p>
+            </div>
+        </div>
+
+        <!-- Filters row -->
+        <div class="flex flex-wrap gap-3 items-center">
+            <div class="flex flex-wrap gap-2 flex-1">
+                <span class="cat-filter-chip active" data-cat="" onclick="setCategory(this, '')">All</span>
+                <span class="cat-filter-chip" data-cat="micro_truck"  onclick="setCategory(this,'micro_truck')">Micro Truck</span>
+                <span class="cat-filter-chip" data-cat="pickup_truck" onclick="setCategory(this,'pickup_truck')">Pickup</span>
+                <span class="cat-filter-chip" data-cat="heavy_truck"  onclick="setCategory(this,'heavy_truck')">Heavy Truck</span>
+                <span class="cat-filter-chip" data-cat="dumper"       onclick="setCategory(this,'dumper')">Dumper</span>
+                <span class="cat-filter-chip" data-cat="jcb"          onclick="setCategory(this,'jcb')">JCB</span>
+                <span class="cat-filter-chip" data-cat="excavator"    onclick="setCategory(this,'excavator')">Excavator</span>
+                <span class="cat-filter-chip" data-cat="tractor"      onclick="setCategory(this,'tractor')">Tractor</span>
+                <span class="cat-filter-chip" data-cat="trailer"      onclick="setCategory(this,'trailer')">Trailer</span>
+            </div>
+            <select id="typeFilter" onchange="filterVehicles()" class="bg-surface-container-high border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary-container">
+                <option value="">All Types</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Tabs: Fleet source -->
+    <div class="flex gap-1 mb-8 bg-surface-container-low p-1 rounded-xl w-fit">
+        <button id="tabAll"    onclick="setSourceTab('all')"    class="px-5 py-2 rounded-lg text-sm font-bold transition-all bg-primary-container text-on-primary">All Fleet</button>
+        <button id="tabAdmin"  onclick="setSourceTab('admin')"  class="px-5 py-2 rounded-lg text-sm font-bold transition-all text-on-surface-variant hover:bg-surface-container-high">Platform Vehicles</button>
+        <button id="tabDriver" onclick="setSourceTab('driver')" class="px-5 py-2 rounded-lg text-sm font-bold transition-all text-on-surface-variant hover:bg-surface-container-high">Driver Fleet</button>
+    </div>
+
+    <div id="vehicle-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="text-center text-on-surface-variant col-span-full py-12">
+            <div class="spinner mx-auto mb-4"></div>Loading vehicles…
+        </div>
+    </div>
+</main>
+
+<footer class="w-full py-12 px-6 border-t border-outline-variant/10 bg-surface-container-lowest">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <span class="text-primary-container font-bold text-xl font-headline tracking-tighter">Digga Industrial</span>
+        <p class="text-on-surface-variant text-xs uppercase tracking-widest">© 2024 Digga Industrial. All rights reserved.</p>
+    </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireAuth(["User", "Admin"]);
+
+const name = localStorage.getItem("user_name");
+if (name) document.getElementById("headerName").textContent = name;
+
+let allAdminVehicles  = [];
+let allDriverVehicles = [];
+let activeCategory    = "";
+let activeSource      = "all";   // 'all' | 'admin' | 'driver'
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+async function loadVehicles() {
+    const [adminRes, driverRes] = await Promise.all([
+        fetchWithAuth("/api/vehicles/?status=available"),
+        fetchWithAuth("/api/vehicles/?status=available"),   // placeholder — will use driver-fleet endpoint too
+    ]);
+
+    allAdminVehicles = await safeJson(adminRes);
+    if (!Array.isArray(allAdminVehicles)) allAdminVehicles = [];
+
+    // Fetch driver-verified vehicles via the admin vehicles endpoint with driver_vehicle info
+    // The backend enriches Vehicle with category/subtype/image_url from linked DriverVehicle
+    const dvRes    = await fetchWithAuth("/api/vehicles/?status=available");
+    const dvList   = await safeJson(dvRes);
+    if (Array.isArray(dvList)) allAdminVehicles = dvList;  // single combined source from Vehicle model
+
+    // Populate type filter from admin vehicles
+    const types = [...new Set(allAdminVehicles.map(v => v.vehicle_type))];
+    const sel   = document.getElementById("typeFilter");
+    sel.innerHTML = '<option value="">All Types</option>';
+    types.forEach(t => sel.add(new Option(t, t)));
+
+    filterVehicles();
+}
+
+// ── Category filter chips ─────────────────────────────────────────────────────
+function setCategory(el, cat) {
+    activeCategory = cat;
+    document.querySelectorAll(".cat-filter-chip").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    filterVehicles();
+}
+
+// ── Source tab ────────────────────────────────────────────────────────────────
+function setSourceTab(source) {
+    activeSource = source;
+    ["all", "admin", "driver"].forEach(s => {
+        const btn = document.getElementById(`tab${s.charAt(0).toUpperCase() + s.slice(1)}`);
+        if (s === source) {
+            btn.className = "px-5 py-2 rounded-lg text-sm font-bold transition-all bg-primary-container text-on-primary";
+        } else {
+            btn.className = "px-5 py-2 rounded-lg text-sm font-bold transition-all text-on-surface-variant hover:bg-surface-container-high";
+        }
+    });
+    filterVehicles();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function filterVehicles() {
+    let vehicles = [...allAdminVehicles];
+
+    // Filter by category (from linked DriverVehicle data)
+    if (activeCategory) {
+        vehicles = vehicles.filter(v => {
+            const catKey = (v.category || "").toLowerCase().replace(/ /g, "_");
+            return catKey === activeCategory;
+        });
+    }
+
+    // Filter by source
+    if (activeSource === "driver") {
+        vehicles = vehicles.filter(v => v.category !== null && v.category !== undefined);
+    } else if (activeSource === "admin") {
+        vehicles = vehicles.filter(v => !v.category);
+    }
+
+    // Filter by type dropdown
+    const typeVal = document.getElementById("typeFilter").value;
+    if (typeVal) vehicles = vehicles.filter(v => v.vehicle_type === typeVal);
+
+    renderVehicles(vehicles);
+}
+
+function renderVehicles(vehicles) {
+    const container = document.getElementById("vehicle-list");
+    document.getElementById("availableCount").textContent = vehicles.length;
+
+    if (!vehicles.length) {
+        container.innerHTML = `<div class="text-center text-on-surface-variant col-span-full py-12"><span class="material-symbols-outlined text-5xl block mb-3 opacity-20">search_off</span><p>No vehicles match your filter.</p></div>`;
+        return;
+    }
+
+    container.innerHTML = vehicles.map(v => {
+        const isDriverVehicle = !!(v.category || v.image_url);
+        return `
+        <div class="glass-card rounded-xl overflow-hidden group flex flex-col cursor-pointer">
+            <div class="h-52 overflow-hidden relative bg-surface-container-high flex items-center justify-center">
+                ${v.image_url
+                    ? `<img src="${v.image_url}" alt="${v.vehicle_type}" class="vehicle-card-img">`
+                    : `<span class="material-symbols-outlined text-8xl text-on-surface-variant/20 group-hover:text-on-surface-variant/30 transition-all" style="font-variation-settings:'FILL' 1">local_shipping</span>`
+                }
+                <div class="absolute top-4 left-4 flex flex-col gap-1.5">
+                    <div class="bg-secondary-container/80 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-secondary status-pulse"></span>
+                        <span class="text-[0.65rem] font-bold tracking-widest uppercase text-on-secondary-container">Available</span>
+                    </div>
+                    ${isDriverVehicle
+                        ? `<div class="driver-badge backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5">
+                               <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1">verified</span>
+                               <span class="text-[0.65rem] font-bold uppercase tracking-wider">Driver Fleet</span>
+                           </div>`
+                        : ''
+                    }
+                </div>
+            </div>
+            <div class="p-6 flex flex-col flex-grow">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="min-w-0 flex-1 mr-3">
+                        <h3 class="font-headline font-bold text-on-surface text-lg leading-tight truncate">${v.vehicle_type}</h3>
+                        ${v.category ? `<p class="text-xs text-on-surface-variant mt-0.5">${v.category} · ${v.subtype || ''}</p>` : ''}
+                    </div>
+                    <span class="font-headline font-bold text-primary-container text-lg flex-shrink-0">
+                        ₹${v.price_per_km}<span class="text-xs text-on-surface-variant font-normal">/km</span>
+                    </span>
+                </div>
+                <div class="flex gap-4 mb-6 text-sm">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-widest text-on-surface-variant block">Capacity</span>
+                        <span class="font-medium">${v.capacity || "N/A"}</span>
+                    </div>
+                    <div class="w-px bg-outline-variant/30"></div>
+                    <div>
+                        <span class="text-[10px] uppercase tracking-widest text-on-surface-variant block">Operator</span>
+                        <span class="font-medium">${v.driver_name || "Platform"}</span>
+                    </div>
+                </div>
+                <button onclick="bookVehicle(${v.vehicle_id})"
+                    class="mt-auto w-full py-4 bg-primary-container text-on-primary font-bold rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 group/btn hover:brightness-110">
+                    Select Unit
+                    <span class="material-symbols-outlined transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+        `;
+    }).join("");
+}
+
+function bookVehicle(vehicleId) {
+    window.location.href = `/booking-live/?vehicle_id=${vehicleId}`;
+}
+
+loadVehicles();
+</script>
+{% endblock %}

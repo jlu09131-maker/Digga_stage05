@@ -1,0 +1,334 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Digga Driver Dashboard{% endblock %}
+
+{% block content %}
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-lowest flex flex-col py-8 z-40 border-r border-outline-variant/10">
+    <div class="text-xl font-black text-primary-container px-6 mb-10 font-headline tracking-tighter uppercase">Digga</div>
+    <div class="px-4 mb-8">
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/10">
+            <div class="w-10 h-10 rounded-full bg-primary-container/15 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-primary-container">person</span>
+            </div>
+            <div class="min-w-0">
+                <p id="driverName" class="text-sm font-bold font-headline text-on-surface truncate">Loading…</p>
+                <p class="text-[0.65rem] uppercase tracking-widest text-on-surface-variant">Verified Operator</p>
+            </div>
+        </div>
+    </div>
+    <nav class="flex-1 space-y-1 px-4">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/10 text-primary-container border-r-4 border-primary-container font-medium text-sm transition-all" href="/driver/">
+            <span class="material-symbols-outlined text-sm">dashboard</span>Dashboard
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/request/">
+            <span class="material-symbols-outlined text-sm">calendar_month</span>Requests
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/earning/">
+            <span class="material-symbols-outlined text-sm">payments</span>Earnings
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/driver/vehicle/">
+            <span class="material-symbols-outlined text-sm">my_location</span>My Vehicle GPS
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/driver/fleet/">
+            <span class="material-symbols-outlined text-sm">garage</span>Manage Fleet
+        </a>
+    </nav>
+    <div class="px-4 mt-auto pt-8 border-t border-outline-variant/10 space-y-1">
+        <button id="logoutBtn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:opacity-75 transition-all text-sm font-medium w-full">
+            <span class="material-symbols-outlined text-sm">logout</span>Logout
+        </button>
+    </div>
+</aside>
+
+<main class="ml-64 p-8 min-h-screen">
+    <header class="flex justify-between items-end mb-12">
+        <div>
+            <h1 class="font-headline text-5xl text-on-background font-bold tracking-tight leading-tight">
+                Systems <span class="text-primary-container">Active</span>
+            </h1>
+            <p id="driverInfo" class="text-on-surface-variant font-body mt-2 text-sm">Loading operator info…</p>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-right">
+                <p class="text-[0.6875rem] uppercase tracking-[0.2em] text-on-surface-variant mb-1">Fleet Status</p>
+                <div class="flex items-center gap-2 justify-end">
+                    <span id="statusDot" class="w-2 h-2 rounded-full bg-green-400 status-pulse"></span>
+                    <span id="statusLabel" class="font-headline font-bold text-green-400 text-sm">ONLINE</span>
+                </div>
+            </div>
+            <button id="toggleStatusBtn"
+                    class="bg-primary-container text-on-primary font-bold px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:brightness-110 active:scale-95 transition-all text-sm">
+                GO OFFLINE
+            </button>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-12 gap-8">
+        <section class="col-span-12 lg:col-span-7">
+            <div class="glass-panel rounded-3xl p-8 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-headline font-bold">Pending Bookings</h2>
+                    <button onclick="loadPendingBookings()" class="text-xs text-primary-container hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">refresh</span>Refresh
+                    </button>
+                </div>
+                <div id="pending-bookings" class="space-y-4">
+                    <div class="text-center py-8 text-on-surface-variant"><div class="spinner mx-auto mb-3"></div>Loading bookings…</div>
+                </div>
+            </div>
+            <div class="glass-panel rounded-3xl p-8 border border-outline-variant/10 mt-8">
+                <h2 class="text-xl font-headline font-bold mb-6">Active Bookings</h2>
+                <div id="active-bookings" class="space-y-4">
+                    <div class="text-center py-4 text-on-surface-variant text-sm">Loading…</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="col-span-12 lg:col-span-5 space-y-8">
+            <div class="glass-panel rounded-3xl p-6 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-headline text-xl font-bold">Your Vehicles</h3>
+                    <a href="/driver/fleet/" class="text-xs text-primary-container hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">open_in_new</span>Manage
+                    </a>
+                </div>
+                <div id="assigned-vehicle" class="space-y-3"><div class="text-center py-6 text-on-surface-variant"><div class="spinner mx-auto mb-3"></div>Loading…</div></div>
+            </div>
+            <div class="glass-panel rounded-3xl p-6 border border-outline-variant/10">
+                <h3 class="font-headline text-xl font-bold mb-4">Today's Earnings</h3>
+                <div id="earnings" class="text-5xl font-headline font-bold text-primary-container">₹0.00</div>
+                <p class="text-xs text-on-surface-variant mt-2 uppercase tracking-widest">Completed rides</p>
+            </div>
+            <div class="glass-panel rounded-3xl p-6 border border-outline-variant/10">
+                <h3 class="font-headline text-xl font-bold mb-5">My Stats</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center py-2 border-b border-outline-variant/10"><span class="text-on-surface-variant">Total rides</span><span id="statTotal" class="font-headline font-bold text-on-surface">—</span></div>
+                    <div class="flex justify-between items-center py-2 border-b border-outline-variant/10"><span class="text-on-surface-variant">Completed</span><span id="statCompleted" class="font-headline font-bold text-green-400">—</span></div>
+                    <div class="flex justify-between items-center py-2"><span class="text-on-surface-variant">Avg. Rating</span><span id="statRating" class="font-headline font-bold text-secondary">—</span></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="mt-16 py-8 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-primary-container font-headline font-bold text-xs tracking-[0.2em] uppercase">Digga Industrial Systems • <span class="text-on-surface-variant font-normal">v2.5.0-Stable</span></div>
+        <div class="flex gap-6"><a class="text-on-surface-variant text-[0.6875rem] uppercase tracking-widest hover:text-primary-container transition-all" href="#">Privacy Policy</a><a class="text-on-surface-variant text-[0.6875rem] uppercase tracking-widest hover:text-primary-container transition-all" href="#">Terms of Service</a></div>
+    </footer>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireAuth(["Driver"]);
+
+let currentUserId = null;
+let isOnline = true;
+
+async function init() {
+    await loadDriverInfo();
+    loadPendingBookings();
+    loadActiveBookings();
+    loadAssignedVehicle();
+    loadEarnings();
+    loadStats();
+}
+
+async function loadDriverInfo() {
+    const storedId = localStorage.getItem("user_id");
+    const name     = localStorage.getItem("user_name");
+    if (name) {
+        document.getElementById("driverName").textContent = name;
+        document.getElementById("driverInfo").textContent = `${name} • Status: Online`;
+    }
+    if (storedId) { currentUserId = parseInt(storedId); return; }
+    try {
+        const res  = await fetchWithAuth("/api/me/");
+        const user = await safeJson(res);
+        if (user.person_id) {
+            currentUserId = user.person_id;
+            localStorage.setItem("user_id",   user.person_id);
+            localStorage.setItem("user_name", user.name);
+            document.getElementById("driverName").textContent = user.name;
+            document.getElementById("driverInfo").textContent = `${user.name} • Status: Online`;
+        }
+    } catch (e) { console.error("Could not load driver info:", e); }
+}
+
+async function loadPendingBookings() {
+    const container = document.getElementById("pending-bookings");
+    const res       = await fetchWithAuth("/api/bookings/?status=pending");
+    const bookings  = await safeJson(res);
+    if (!Array.isArray(bookings) || !bookings.length) {
+        container.innerHTML = `<div class="text-center py-8 text-on-surface-variant text-sm"><span class="material-symbols-outlined text-3xl block mb-2 opacity-40">inbox</span>No pending bookings.</div>`;
+        return;
+    }
+    container.innerHTML = bookings.map(b => `
+        <div class="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/10 flex flex-col sm:flex-row justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1"><span class="font-mono text-xs text-on-surface-variant">#${b.booking_id}</span>${statusBadge(b.status)}</div>
+                <div class="text-sm text-on-surface font-medium truncate">${b.pickup_location}</div>
+                <div class="flex items-center gap-1 text-xs text-on-surface-variant mt-0.5"><span class="material-symbols-outlined text-xs">arrow_forward</span><span class="truncate">${b.drop_location}</span></div>
+                <div class="text-xs text-on-surface-variant mt-1">User: ${b.user_name || "—"}</div>
+            </div>
+            <div class="flex gap-2 items-start">
+                <button onclick="window.acceptBooking(${b.booking_id})" class="px-4 py-2 bg-primary-container text-on-primary rounded-lg text-sm font-bold hover:brightness-110 active:scale-95 transition-all whitespace-nowrap">Accept</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+async function loadActiveBookings() {
+    const container = document.getElementById("active-bookings");
+    const [r1, r2]  = await Promise.all([
+        fetchWithAuth("/api/bookings/?status=accepted"),
+        fetchWithAuth("/api/bookings/?status=ongoing"),
+    ]);
+    const [b1, b2]  = await Promise.all([safeJson(r1), safeJson(r2)]);
+    const bookings  = [...(Array.isArray(b1) ? b1 : []), ...(Array.isArray(b2) ? b2 : [])];
+    if (!bookings.length) {
+        container.innerHTML = `<div class="text-center py-4 text-on-surface-variant text-sm">No active bookings.</div>`;
+        return;
+    }
+    container.innerHTML = bookings.map(b => `
+        <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 flex justify-between gap-4">
+            <div class="min-w-0"><div class="flex items-center gap-2 mb-1"><span class="font-mono text-xs text-on-surface-variant">#${b.booking_id}</span>${statusBadge(b.status)}</div><div class="text-sm truncate">${b.pickup_location} → ${b.drop_location}</div></div>
+            <div class="flex gap-2">
+                ${b.status === "accepted" ? `<button onclick="window.startBooking(${b.booking_id})" class="px-3 py-1.5 bg-secondary text-on-secondary rounded-lg text-xs font-bold">Start</button>` : ""}
+                ${b.status === "ongoing"  ? `<button onclick="window.completeBooking(${b.booking_id})" class="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold">Complete</button>` : ""}
+            </div>
+        </div>
+    `).join("");
+}
+
+async function loadAssignedVehicle() {
+    const container = document.getElementById("assigned-vehicle");
+    if (!currentUserId) { container.innerHTML = `<div class="text-center text-on-surface-variant text-sm">Login info not found.</div>`; return; }
+
+    // Show admin-assigned vehicle
+    const res      = await fetchWithAuth(`/api/vehicles/?driver=${currentUserId}`);
+    const vehicles = await safeJson(res);
+
+    // Show self-managed vehicles
+    const dvRes    = await fetchWithAuth("/api/driver/vehicles/");
+    const dvList   = await safeJson(dvRes);
+
+    if ((!Array.isArray(vehicles) || !vehicles.length) && (!Array.isArray(dvList) || !dvList.length)) {
+        container.innerHTML = `<div class="text-center text-on-surface-variant text-sm py-4"><span class="material-symbols-outlined text-3xl block mb-2 opacity-30">garage</span>No vehicles yet.<br><a href="/driver/fleet/" class="text-primary-container text-xs hover:underline">Add your vehicle →</a></div>`;
+        return;
+    }
+
+    const adminV = Array.isArray(vehicles) ? vehicles : [];
+    const driverV = Array.isArray(dvList) ? dvList.slice(0, 3) : [];
+
+    if (adminV.length) {
+        const v = adminV[0];
+        isOnline = v.status !== "inactive";
+        updateOnlineBtn();
+    }
+
+    container.innerHTML = [
+        ...adminV.slice(0, 2).map(v => `
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-high/40">
+                <div class="w-10 h-10 rounded-lg bg-primary-container/10 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-primary-container text-sm" style="font-variation-settings:'FILL' 1">local_shipping</span></div>
+                <div class="flex-1 min-w-0"><div class="font-bold text-sm truncate">${v.vehicle_type}</div><div class="text-xs text-on-surface-variant">Admin-assigned • ${statusBadge(v.status)}</div></div>
+                <span class="text-xs font-headline text-primary-container">₹${v.price_per_km}/km</span>
+            </div>
+        `),
+        ...driverV.map(v => `
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-high/40">
+                <div class="w-10 h-10 rounded-lg bg-secondary-container/20 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings:'FILL' 1">garage</span></div>
+                <div class="flex-1 min-w-0"><div class="font-bold text-sm truncate">${v.brand} ${v.model_name}</div><div class="text-xs text-on-surface-variant">${v.number_plate} • ${v.is_verified ? '<span class="text-green-400">Verified</span>' : '<span class="text-yellow-400">Pending</span>'}</div></div>
+                <span class="text-xs font-headline text-primary-container">₹${v.price_per_km}/km</span>
+            </div>
+        `),
+    ].join("") || `<div class="text-center text-on-surface-variant text-sm py-4">No vehicles found.</div>`;
+}
+
+async function loadEarnings() {
+    const res      = await fetchWithAuth("/api/bookings/?status=completed");
+    const bookings = await safeJson(res);
+    if (!Array.isArray(bookings)) return;
+    const total = bookings.reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
+    document.getElementById("earnings").textContent = `₹${total.toFixed(2)}`;
+}
+
+async function loadStats() {
+    const res      = await fetchWithAuth("/api/bookings/");
+    const bookings = await safeJson(res);
+    if (!Array.isArray(bookings)) return;
+    document.getElementById("statTotal").textContent     = bookings.length;
+    document.getElementById("statCompleted").textContent = bookings.filter(b => b.status === "completed").length;
+    const res2   = await fetchWithAuth("/api/ratings/");
+    const ratings = await safeJson(res2);
+    if (Array.isArray(ratings) && ratings.length) {
+        const avg = ratings.reduce((s, r) => s + r.rating_value, 0) / ratings.length;
+        document.getElementById("statRating").textContent = `${avg.toFixed(1)} ★`;
+    } else {
+        document.getElementById("statRating").textContent = "No ratings yet";
+    }
+}
+
+window.acceptBooking = async function(id) {
+    const res = await fetchWithAuth(`/api/bookings/${id}/accept/`, { method: "POST" });
+    const d   = await safeJson(res);
+    if (res.ok) { showToast("Booking accepted!", "success"); loadPendingBookings(); loadActiveBookings(); loadAssignedVehicle(); }
+    else showToast(d.detail || "Failed to accept.", "error");
+};
+
+window.startBooking = async function(id) {
+    const res = await fetchWithAuth(`/api/bookings/${id}/start/`, { method: "POST" });
+    const d   = await safeJson(res);
+    if (res.ok) { showToast("Ride started!", "success"); loadActiveBookings(); }
+    else showToast(d.detail || "Error", "error");
+};
+
+window.completeBooking = async function(id) {
+    const res = await fetchWithAuth(`/api/bookings/${id}/complete/`, { method: "POST" });
+    const d   = await safeJson(res);
+    if (res.ok) { showToast("Ride completed!", "success"); loadActiveBookings(); loadEarnings(); loadAssignedVehicle(); }
+    else showToast(d.detail || "Error", "error");
+};
+
+function updateOnlineBtn() {
+    const btn   = document.getElementById("toggleStatusBtn");
+    const dot   = document.getElementById("statusDot");
+    const label = document.getElementById("statusLabel");
+    if (isOnline) {
+        btn.textContent = "GO OFFLINE";
+        btn.className   = "bg-primary-container text-on-primary font-bold px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:brightness-110 active:scale-95 transition-all text-sm";
+        dot.className   = "w-2 h-2 rounded-full bg-green-400 status-pulse";
+        label.className = "font-headline font-bold text-green-400 text-sm";
+        label.textContent = "ONLINE";
+    } else {
+        btn.textContent = "GO ONLINE";
+        btn.className   = "bg-surface-container-high border border-outline-variant/30 text-on-surface font-bold px-6 py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all text-sm";
+        dot.className   = "w-2 h-2 rounded-full bg-on-surface-variant";
+        label.className = "font-headline font-bold text-on-surface-variant text-sm";
+        label.textContent = "OFFLINE";
+    }
+}
+
+document.getElementById("toggleStatusBtn").addEventListener("click", async () => {
+    if (!currentUserId) { showToast("Driver info not loaded yet.", "warning"); return; }
+    const res      = await fetchWithAuth(`/api/vehicles/?driver=${currentUserId}`);
+    const vehicles = await safeJson(res);
+    if (!Array.isArray(vehicles) || !vehicles.length) {
+        showToast("No admin-assigned vehicle. Manage your fleet to update status.", "warning");
+        return;
+    }
+    const vehicle   = vehicles[0];
+    const newStatus = isOnline ? "inactive" : "available";
+    const updateRes = await fetchWithAuth(`/api/vehicles/${vehicle.vehicle_id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+    });
+    if (updateRes.ok) { isOnline = !isOnline; updateOnlineBtn(); showToast(`You are now ${isOnline ? "online" : "offline"}.`, "info"); loadAssignedVehicle(); }
+    else showToast("Failed to update status.", "error");
+});
+
+document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+init();
+setInterval(loadPendingBookings, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "myapp/base.html" %}
+{% block title %}My Bookings | Digga{% endblock %}
+
+{% block content %}
+<header class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/15 shadow-[0_0_40px_rgba(0,240,255,0.06)] flex justify-between items-center px-6 py-4">
+    <div class="flex items-center gap-8"><a href="/" class="text-2xl font-bold tracking-tighter text-primary-container font-headline">Digga</a><nav class="hidden md:flex items-center gap-6 text-sm"><a href="/user/" class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">Dashboard</a><a href="/my-bookings/" class="text-primary-container border-b-2 border-primary-container pb-1 font-headline">My Bookings</a><a href="/vehicles/" class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">Fleet</a><a href="/booking-live/" class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">Live Map</a></nav></div>
+    <div class="flex items-center gap-3"><span id="headerName" class="text-sm text-on-surface-variant hidden sm:block"></span><button onclick="logout()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-error transition-all text-sm"><span class="material-symbols-outlined" style="font-size:.9rem">logout</span><span class="hidden sm:block">Logout</span></button></div>
+</header>
+<main class="pt-24 pb-20 px-6 max-w-7xl mx-auto"><h1 class="text-4xl font-headline font-bold tracking-tight mb-8">My Bookings</h1><div class="overflow-x-auto rounded-xl border border-outline-variant/10"><table class="min-w-full bg-surface-container-low"><thead class="bg-surface-container-high"><tr><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">ID</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Vehicle</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Pickup</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Drop</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Status</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Amount</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Actions</th></tr></thead><tbody id="bookingsTbody" class="divide-y divide-outline-variant/10"><tr><td colspan="7" class="text-center py-10"><div class="spinner mx-auto"></div>Loading…</td></tr></tbody></table></div></main>
+<script>
+requireAuth(["User"]);
+document.getElementById("headerName").textContent = localStorage.getItem("user_name") || "";
+async function loadMyBookings() {
+    const res = await fetchWithAuth("/api/bookings/");
+    const bookings = await safeJson(res);
+    const tbody = document.getElementById("bookingsTbody");
+    if (!Array.isArray(bookings) || !bookings.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-on-surface-variant">No bookings found.</td></tr>`; return; }
+    tbody.innerHTML = bookings.map(b => {
+        const actions = [];
+        if (b.status === "accepted" || b.status === "ongoing") actions.push(`<a href="/track-ride/${b.booking_id}/" class="text-xs text-primary-container font-bold hover:underline">Track</a>`);
+        if (b.status === "completed") actions.push(`<button onclick="openRateModal(${b.booking_id})" class="text-xs text-secondary font-bold ml-2">Rate</button>`);
+        if (b.status === "pending") actions.push(`<button onclick="cancelBooking(${b.booking_id})" class="text-xs text-error font-bold">Cancel</button>`);
+        return `<tr class="hover:bg-surface-container-high/30 transition-colors"><td class="px-5 py-4 text-sm font-mono">#${b.booking_id}</td><td class="px-5 py-4 text-sm">${b.vehicle_detail?.vehicle_type || "—"}</td><td class="px-5 py-4 text-xs max-w-[130px] truncate">${b.pickup_location}</td><td class="px-5 py-4 text-xs max-w-[130px] truncate">${b.drop_location}</td><td class="px-5 py-4">${statusBadge(b.status)}</td><td class="px-5 py-4 text-sm">₹${parseFloat(b.total_amount||0).toFixed(0)}</td><td class="px-5 py-4">${actions.join(" ")}</td></tr>`;
+    }).join("");
+}
+async function cancelBooking(id) { if (!confirm(`Cancel booking #${id}?`)) return; const res = await fetchWithAuth(`/api/bookings/${id}/cancel/`, { method: "POST" }); if (res.ok) { showToast("Cancelled", "info"); loadMyBookings(); } else showToast("Failed", "error"); }
+loadMyBookings();
+</script>
+{% endblock %}

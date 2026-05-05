@@ -1,0 +1,269 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Digga | User Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top nav -->
+<header class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/15 shadow-[0_0_40px_rgba(0,240,255,0.06)] flex justify-between items-center px-6 py-4">
+    <div class="flex items-center gap-8">
+        <a href="/" class="text-2xl font-bold tracking-tighter text-primary-container font-headline">Digga</a>
+        <nav class="hidden md:flex items-center gap-6 text-sm">
+            <a href="/user/"         class="text-primary-container border-b-2 border-primary-container pb-1 font-headline">Dashboard</a>
+            <a href="/my-bookings/"  class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">My Bookings</a>
+            <a href="/vehicles/"     class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">Fleet</a>
+            <a href="/booking-live/" class="text-on-surface-variant hover:text-primary-container transition-colors font-headline">Live Map</a>
+        </nav>
+    </div>
+    <div class="flex items-center gap-3">
+        <span id="headerName" class="text-sm text-on-surface-variant hidden sm:block"></span>
+        <button onclick="logout()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-error transition-all text-sm">
+            <span class="material-symbols-outlined" style="font-size:.9rem">logout</span>
+            <span class="hidden sm:block">Logout</span>
+        </button>
+    </div>
+</header>
+
+<div class="flex pt-16">
+    <!-- Sidebar -->
+    <aside class="h-screen w-60 fixed left-0 top-0 bg-surface-container-lowest flex-col py-8 hidden lg:flex border-r border-outline-variant/10 z-40">
+        <div class="text-xl font-black text-primary-container px-6 mb-10 font-headline tracking-tighter uppercase">Digga</div>
+        <div class="px-4 mb-8">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low">
+                <div class="w-10 h-10 rounded-lg bg-primary-container/15 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-primary-container">person</span>
+                </div>
+                <div class="min-w-0">
+                    <div id="sidebarName" class="text-sm font-semibold text-on-surface truncate">Loading…</div>
+                    <div class="text-[10px] uppercase tracking-widest text-on-surface-variant">User</div>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 space-y-1 px-4 text-sm font-medium">
+            <a href="/user/"         class="flex items-center gap-3 p-3 rounded-lg bg-primary-container/10 text-primary-container border-r-4 border-primary-container transition-all">
+                <span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+            <a href="/my-bookings/"  class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all">
+                <span class="material-symbols-outlined">receipt</span> My Bookings
+            </a>
+            <a href="/vehicles/"     class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all">
+                <span class="material-symbols-outlined">trolley</span> Fleet
+            </a>
+            <a href="/booking-live/" class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all">
+                <span class="material-symbols-outlined">location_on</span> Live Map
+            </a>
+        </nav>
+        <div class="mt-auto px-4 pt-4 border-t border-outline-variant/10">
+            <button onclick="logout()" class="flex items-center gap-3 p-3 text-error hover:opacity-75 text-sm w-full">
+                <span class="material-symbols-outlined">logout</span> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 lg:ml-60 p-6 md:p-10 min-h-screen">
+        <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold font-headline tracking-tighter mb-2">
+                    Welcome, <span id="welcomeName" class="text-primary-container">…</span>
+                </h1>
+                <p class="text-on-surface-variant text-sm">Your bookings and available fleet at a glance.</p>
+            </div>
+            <a href="/vehicles/" class="px-6 py-3 bg-primary-container text-on-primary font-bold rounded-xl text-sm shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 w-fit">
+                <span class="material-symbols-outlined" style="font-size:.9rem">add</span> New Booking
+            </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div class="glass-card p-5 rounded-xl"><p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Total</p><p id="statTotal" class="text-3xl font-headline font-bold">—</p></div>
+            <div class="glass-card p-5 rounded-xl"><p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Active</p><p id="statActive" class="text-3xl font-headline font-bold text-primary-container">—</p></div>
+            <div class="glass-card p-5 rounded-xl"><p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Completed</p><p id="statDone" class="text-3xl font-headline font-bold text-green-400">—</p></div>
+            <div class="glass-card p-5 rounded-xl"><p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Total Spent</p><p id="statSpent" class="text-3xl font-headline font-bold text-secondary">—</p></div>
+        </div>
+
+        <!-- Bookings table -->
+        <section class="mb-10">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-2xl font-headline font-bold">My Bookings</h2>
+                <select id="statusFilter" onchange="loadBookings()" class="bg-surface-container-high border border-outline-variant/30 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary-container">
+                    <option value="">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-outline-variant/10">
+                <table class="min-w-full bg-surface-container-low">
+                    <thead class="bg-surface-container-high">
+                        <tr><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">ID</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Vehicle</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Pickup</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Drop</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Status</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Amount</th><th class="px-5 py-3 text-left text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">Actions</th></tr></thead>
+                    <tbody id="bookingsTbody" class="divide-y divide-outline-variant/10"><tr><td colspan="7" class="text-center py-10"><div class="spinner mx-auto mb-3"></div>Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Available Fleet -->
+        <section>
+            <div class="flex items-center justify-between mb-5"><h2 class="text-2xl font-headline font-bold">Available Fleet</h2><a href="/vehicles/" class="text-sm text-primary-container hover:underline">View all →</a></div>
+            <div id="vehicleGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"><div class="col-span-full text-center py-8 text-on-surface-variant text-sm"><div class="spinner mx-auto mb-3"></div>Loading vehicles…</div></div>
+        </section>
+    </main>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2 class="font-headline text-xl font-bold mb-5">New Booking</h2>
+        <div id="modalVehicleCard" class="p-4 bg-surface-container-high rounded-xl mb-5 flex items-center gap-4"><span class="material-symbols-outlined text-primary-container text-3xl">trolley</span><div><p id="modalVType" class="font-bold text-on-surface">—</p><p id="modalVPrice" class="text-sm text-on-surface-variant">—</p></div></div>
+        <div class="space-y-4"><div><label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Pickup Location</label><input id="modalPickup" type="text" placeholder="e.g. Industrial Zone 4, Bay 12" class="w-full bg-surface-container-high border border-outline-variant/30 rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-container transition-all"></div><div><label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Drop Location</label><input id="modalDrop" type="text" placeholder="e.g. Construction Site B" class="w-full bg-surface-container-high border border-outline-variant/30 rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-container transition-all"></div></div>
+        <div class="flex gap-3 mt-6"><button onclick="closeModal('bookingModal')" class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high text-sm font-bold transition-all">Cancel</button><button id="confirmBookBtn" onclick="submitBooking()" class="flex-1 py-3 rounded-xl bg-primary-container text-on-primary font-bold text-sm hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"><span>Confirm</span><span id="bookSpinner" class="spinner hidden"></span></button></div>
+    </div>
+</div>
+
+<!-- Rate Modal -->
+<div id="rateModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2 class="font-headline text-xl font-bold mb-2">Rate Your Ride</h2>
+        <p class="text-sm text-on-surface-variant mb-5">Booking #<span id="rateBookingId"></span></p>
+        <div class="flex justify-center gap-3 mb-5" id="starRow"><button class="star text-4xl transition-transform hover:scale-125" data-val="1">☆</button><button class="star text-4xl transition-transform hover:scale-125" data-val="2">☆</button><button class="star text-4xl transition-transform hover:scale-125" data-val="3">☆</button><button class="star text-4xl transition-transform hover:scale-125" data-val="4">☆</button><button class="star text-4xl transition-transform hover:scale-125" data-val="5">☆</button></div>
+        <textarea id="reviewText" rows="3" placeholder="Optional feedback…" class="w-full bg-surface-container-high border border-outline-variant/30 rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-container transition-all resize-none mb-4"></textarea>
+        <div class="flex gap-3"><button onclick="closeModal('rateModal')" class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-on-surface-variant text-sm font-bold">Skip</button><button onclick="submitRating()" class="flex-1 py-3 rounded-xl bg-secondary text-on-secondary font-bold text-sm hover:brightness-110 active:scale-95 transition-all">Submit</button></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireAuth(["User"]);
+
+let selectedVehicleId = null;
+let ratingBookingId   = null;
+let selectedRating    = 0;
+
+function openModal(id)  { document.getElementById(id).classList.remove("hidden"); }
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+document.querySelectorAll(".modal-overlay").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.add("hidden"); }));
+
+async function loadProfile() {
+    try {
+        const res  = await fetchWithAuth("/api/me/");
+        const user = await safeJson(res);
+        const name = user.name || localStorage.getItem("user_name") || "User";
+        document.getElementById("sidebarName").textContent = name;
+        document.getElementById("welcomeName").textContent = name;
+        document.getElementById("headerName").textContent  = name;
+        localStorage.setItem("user_id", user.person_id || "");
+    } catch {}
+}
+
+async function loadBookings() {
+    const tbody  = document.getElementById("bookingsTbody");
+    const filter = document.getElementById("statusFilter").value;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="spinner mx-auto mb-3"></div>Loading…</td></tr>`;
+    const res      = await fetchWithAuth("/api/bookings/" + (filter ? `?status=${filter}` : ""));
+    const bookings = await safeJson(res);
+    if (!Array.isArray(bookings)) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-error">Failed to load bookings.</td></tr>`; return; }
+    document.getElementById("statTotal").textContent = bookings.length;
+    document.getElementById("statActive").textContent = bookings.filter(b => ["pending","accepted","ongoing"].includes(b.status)).length;
+    document.getElementById("statDone").textContent   = bookings.filter(b => b.status === "completed").length;
+    const spent = bookings.reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
+    document.getElementById("statSpent").textContent = "₹" + spent.toFixed(0);
+    if (!bookings.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-on-surface-variant">No bookings found.</td></tr>`; return; }
+    tbody.innerHTML = bookings.map(b => {
+        const vName = b.vehicle_detail?.vehicle_type || (b.vehicle ? `#${b.vehicle}` : "—");
+        const actions = [];
+        if (b.status === "accepted" || b.status === "ongoing") actions.push(`<a href="/track-ride/${b.booking_id}/" class="text-xs text-primary-container font-bold hover:underline">Track</a>`);
+        if (b.status === "completed") actions.push(`<button onclick="openRateModal(${b.booking_id})" class="text-xs text-secondary font-bold hover:opacity-75 ml-2">Rate</button>`);
+        if (b.status === "pending") actions.push(`<button onclick="cancelBooking(${b.booking_id})" class="text-xs text-error font-bold hover:opacity-75">Cancel</button>`);
+        return `<tr class="hover:bg-surface-container-high/30 transition-colors">
+            <td class="px-5 py-4 text-sm font-mono">#${b.booking_id}</td>
+            <td class="px-5 py-4 text-sm">${vName}</td>
+            <td class="px-5 py-4 text-xs max-w-[130px] truncate">${b.pickup_location}</td>
+            <td class="px-5 py-4 text-xs max-w-[130px] truncate">${b.drop_location}</td>
+            <td class="px-5 py-4">${statusBadge(b.status)}</td>
+            <td class="px-5 py-4 text-sm font-headline">₹${parseFloat(b.total_amount||0).toFixed(0)}</td>
+            <td class="px-5 py-4 whitespace-nowrap">${actions.join(" ")}</td>
+        </tr>`;
+    }).join("");
+}
+
+async function cancelBooking(id) {
+    if (!confirm(`Cancel booking #${id}?`)) return;
+    const res = await fetchWithAuth(`/api/bookings/${id}/cancel/`, { method: "POST" });
+    const d   = await safeJson(res);
+    res.ok ? (showToast("Booking cancelled.", "info"), loadBookings()) : showToast(d.detail || "Failed to cancel.", "error");
+}
+
+async function loadVehicles() {
+    const grid = document.getElementById("vehicleGrid");
+    const res      = await fetchWithAuth("/api/vehicles/?status=available");
+    const vehicles = await safeJson(res);
+    if (!Array.isArray(vehicles) || !vehicles.length) { grid.innerHTML = `<p class="col-span-full text-center text-on-surface-variant text-sm py-6">No vehicles available right now.</p>`; return; }
+    grid.innerHTML = vehicles.slice(0, 6).map(v => `<div class="glass-card rounded-xl p-5 flex flex-col gap-4">
+        <div class="flex justify-between items-start">
+            <div><h3 class="font-headline font-bold text-on-surface">${v.vehicle_type}</h3><p class="text-xs text-on-surface-variant mt-0.5">Cap: ${v.capacity || "N/A"}</p></div>
+            <span class="font-headline font-bold text-primary-container text-lg">₹${v.price_per_km}<span class="text-xs text-on-surface-variant">/km</span></span>
+        </div>
+        ${statusBadge(v.status)}
+        <button onclick="openBookingModal(${v.vehicle_id},'${v.vehicle_type}',${v.price_per_km})" class="mt-auto w-full py-3 bg-primary-container/10 hover:bg-primary-container text-primary-container hover:text-on-primary rounded-lg font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined" style="font-size:.9rem">add_circle</span> Book Now
+        </button>
+    </div>`).join("");
+}
+
+function openBookingModal(vid, vtype, price) {
+    selectedVehicleId = vid;
+    document.getElementById("modalVType").textContent = vtype;
+    document.getElementById("modalVPrice").textContent = `₹${price}/km`;
+    document.getElementById("modalPickup").value = "";
+    document.getElementById("modalDrop").value   = "";
+    openModal("bookingModal");
+}
+
+async function submitBooking() {
+    const pickup = document.getElementById("modalPickup").value.trim();
+    const drop   = document.getElementById("modalDrop").value.trim();
+    if (!pickup || !drop) { showToast("Enter both pickup and drop locations.", "warning"); return; }
+    const btn = document.getElementById("confirmBookBtn");
+    const sp  = document.getElementById("bookSpinner");
+    btn.disabled = true; sp.classList.remove("hidden");
+    const res = await fetchWithAuth("/api/bookings/", { method: "POST", body: JSON.stringify({ vehicle: selectedVehicleId, pickup_location: pickup, drop_location: drop }) });
+    const d = await safeJson(res);
+    btn.disabled = false; sp.classList.add("hidden");
+    if (res.ok) { showToast("Booking created!", "success"); closeModal("bookingModal"); loadBookings(); }
+    else { showToast(d.detail || d.errors?.vehicle?.[0] || "Booking failed.", "error"); }
+}
+
+function openRateModal(bookingId) {
+    ratingBookingId = bookingId;
+    selectedRating  = 0;
+    document.getElementById("rateBookingId").textContent = bookingId;
+    document.getElementById("reviewText").value = "";
+    document.querySelectorAll(".star").forEach(s => { s.textContent = "☆"; s.style.color = ""; });
+    openModal("rateModal");
+}
+document.querySelectorAll(".star").forEach(btn => {
+    btn.addEventListener("click", () => {
+        selectedRating = parseInt(btn.dataset.val);
+        document.querySelectorAll(".star").forEach((s, i) => { s.textContent = i < selectedRating ? "★" : "☆"; s.style.color = i < selectedRating ? "#00f0ff" : ""; });
+    });
+});
+async function submitRating() {
+    if (!selectedRating) { showToast("Please select a star rating.", "warning"); return; }
+    const userId = localStorage.getItem("user_id");
+    const res = await fetchWithAuth("/api/ratings/", { method: "POST", body: JSON.stringify({ user: userId, booking: ratingBookingId, driver: null, rating_value: selectedRating, review: document.getElementById("reviewText").value }) });
+    const d = await safeJson(res);
+    if (res.ok) {
+        showToast("Rating submitted!", "success");
+        closeModal("rateModal");
+    } else {
+        showToast(d.detail || "Rating failed.", "error");
+    }
+}
+
+loadProfile();
+loadBookings();
+loadVehicles();
+</script>
+{% endblock %}

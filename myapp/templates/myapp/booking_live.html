@@ -1,0 +1,201 @@
+{% extends "myapp/base.html" %}
+{% block title %}Live Booking | Digga{% endblock %}
+
+{% block content %}
+<header class="bg-surface/40 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-outline-variant/15 shadow-[0_0_40px_rgba(0,240,255,0.08)]">
+    <div class="flex justify-between items-center px-6 py-4 w-full">
+        <a href="/" class="text-2xl font-bold tracking-tighter text-primary-container font-headline">Digga</a>
+        <nav class="hidden md:flex items-center space-x-8 font-headline tracking-tight">
+            <a href="/vehicles/" class="text-on-surface-variant hover:text-primary-container transition-colors">Fleet</a>
+            <a href="/booking-live/" class="text-primary-container border-b-2 border-primary-container pb-1">Bookings</a>
+            <a href="/user/" class="text-on-surface-variant hover:text-primary-container transition-colors">Dashboard</a>
+        </nav>
+        <div class="flex items-center gap-3">
+            <span id="headerName" class="text-sm text-on-surface-variant hidden sm:block"></span>
+            <button onclick="logout()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-error transition-all text-sm"><span class="material-symbols-outlined" style="font-size:.9rem">logout</span><span class="hidden sm:block">Logout</span></button>
+        </div>
+    </div>
+</header>
+
+<main class="flex h-screen pt-[4.5rem]">
+    <aside class="w-[420px] h-full bg-surface-container-lowest border-r border-outline-variant/15 flex flex-col z-40 overflow-y-auto">
+        <div class="p-8 flex-1">
+            <div class="mb-10">
+                <p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-2">Operation Details</p>
+                <h1 class="text-3xl font-headline font-bold text-primary-container tracking-tighter mb-8 leading-none">Schedule Equipment</h1>
+                <div class="space-y-4">
+                    <div class="relative"><div class="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary-container shadow-[0_0_8px_rgba(0,240,255,0.6)]"></div><input id="pickup-location" class="w-full bg-surface-container-highest border-none rounded-xl pl-10 pr-4 py-4 text-sm text-on-surface focus:ring-1 focus:ring-primary-container/50 transition-all placeholder:text-on-surface-variant/50" placeholder="Pickup Site / Depot" type="text"/></div>
+                    <div class="flex justify-center -my-2 relative z-10"><div class="h-6 w-[2px] bg-outline-variant/30"></div></div>
+                    <div class="relative"><div class="absolute left-4 top-1/2 -translate-y-1/2"><span class="material-symbols-outlined text-secondary text-sm">location_on</span></div><input id="drop-location" class="w-full bg-surface-container-highest border-none rounded-xl pl-10 pr-4 py-4 text-sm text-on-surface focus:ring-1 focus:ring-primary-container/50 transition-all placeholder:text-on-surface-variant/50" placeholder="Work Site Location" type="text"/></div>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-4">Selected Asset</p>
+                <div id="selected-asset" class="bg-surface-container-high/60 p-4 rounded-xl border border-outline-variant/10 flex items-center gap-4">
+                    <div class="w-16 h-16 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-4xl text-on-surface-variant/30" style="font-variation-settings:'FILL' 1">trolley</span></div>
+                    <div class="flex-1"><h3 id="asset-name" class="font-headline font-bold text-lg leading-tight text-on-surface">Loading…</h3><p id="asset-price" class="text-xs text-on-surface-variant mt-1">—</p><div class="mt-2"><span id="asset-badge" class="bg-secondary-container/20 text-secondary text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Available</span></div></div>
+                </div>
+            </div>
+
+            <div class="mb-10 bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10">
+                <p class="text-[0.6875rem] uppercase tracking-widest text-on-surface-variant mb-6">Estimated Costs</p>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center"><span class="text-sm text-on-surface-variant">Base Rate / km</span><span id="cost-rate" class="text-sm font-headline text-on-surface">—</span></div>
+                    <div class="flex justify-between items-center"><span class="text-sm text-on-surface-variant">Vehicle</span><span id="cost-vehicle" class="text-sm font-headline text-on-surface">—</span></div>
+                    <div class="flex justify-between items-center pt-4 border-t border-outline-variant/15"><span class="text-lg font-headline font-bold text-primary-container">Capacity</span><span id="cost-capacity" class="text-2xl font-headline font-bold text-on-surface">—</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="p-8 pt-0">
+            <button id="confirm-booking-btn" class="w-full bg-gradient-to-r from-primary-fixed-dim to-primary-container text-on-primary py-5 rounded-xl font-headline font-bold text-lg tracking-tight shadow-[0_4px_20px_rgba(0,240,255,0.2)] hover:shadow-[0_4px_30px_rgba(0,240,255,0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                <span id="confirmBtnText">Confirm Booking</span>
+                <span id="confirmBtnSpinner" class="spinner hidden"></span>
+            </button>
+            <p class="text-center text-xs text-on-surface-variant mt-3">No vehicle? <a href="/vehicles/" class="text-primary-container hover:underline">Browse Fleet →</a></p>
+        </div>
+    </aside>
+
+    <section class="flex-1 relative bg-surface-dim overflow-hidden">
+        <div class="absolute inset-0 z-0"><div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div><div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-container-lowest to-surface-container text-on-surface-variant/10"><span class="material-symbols-outlined" style="font-size:12rem; font-variation-settings:'FILL' 1">map</span></div></div>
+        <div class="absolute inset-0 z-10 pointer-events-none"><svg class="w-full h-full opacity-60" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice"><path d="M200 650 Q 400 500 600 350 T 820 150" fill="none" stroke="#00F0FF" stroke-width="4" stroke-linecap="round" class="drop-shadow-[0_0_15px_rgba(0,240,255,1)]"/><circle cx="820" cy="150" r="12" fill="#00F0FF" class="animate-pulse shadow-[0_0_20px_rgba(0,240,255,1)]"/><circle cx="200" cy="650" r="8" fill="#dcb8ff" class="animate-pulse"/></svg></div>
+        <div class="absolute bottom-10 left-10 right-10 z-20">
+            <div class="glass-panel rounded-3xl p-8 border border-outline-variant/10 shadow-2xl flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-shrink-0 text-center md:text-left">
+                    <div class="flex items-center gap-2 mb-1 justify-center md:justify-start"><div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_10px_rgba(220,184,255,0.8)] animate-pulse"></div><p class="text-xs font-bold text-secondary uppercase tracking-[0.2em]">ETA</p></div>
+                    <h2 class="text-5xl font-headline font-black text-on-surface tracking-tighter leading-none">— <span class="text-2xl text-on-surface-variant font-normal tracking-normal">min</span></h2>
+                    <p class="text-sm text-on-surface-variant mt-1">Awaiting confirmation</p>
+                </div>
+                <div class="hidden md:block h-16 w-px bg-outline-variant/20"></div>
+                <div class="flex items-center gap-5 flex-1">
+                    <div class="w-14 h-14 rounded-2xl bg-primary-container/10 flex items-center justify-center ring-2 ring-primary-container/20"><span class="material-symbols-outlined text-primary-container text-3xl" style="font-variation-settings:'FILL' 1">trolley</span></div>
+                    <div>
+                        <h3 id="eta-vehicle-name" class="font-headline font-bold text-on-surface text-lg leading-tight">—</h3>
+                        <p class="text-sm text-on-surface-variant">Industrial Vehicle</p>
+                        <div class="flex items-center gap-1 mt-1"><span class="text-secondary text-sm">★★★★★</span><span class="text-xs text-on-surface-variant">Verified Operator</span></div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 text-right">
+                    <div class="text-xs text-on-surface-variant uppercase tracking-widest">Driver</div>
+                    <div id="eta-driver-name" class="font-headline font-bold text-on-surface">Unassigned</div>
+                    <div id="eta-status" class="text-xs text-primary-container">Awaiting Booking</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute top-6 right-6 z-20 flex flex-col gap-2">
+            <div class="flex flex-col glass-panel rounded-xl border border-outline-variant/10 overflow-hidden">
+                <button class="w-12 h-12 flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-all border-b border-outline-variant/10"><span class="material-symbols-outlined">add</span></button>
+                <button class="w-12 h-12 flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-all"><span class="material-symbols-outlined">remove</span></button>
+            </div>
+            <button class="w-12 h-12 glass-panel rounded-xl flex items-center justify-center border border-outline-variant/10 text-on-surface hover:bg-surface-container-highest transition-all"><span class="material-symbols-outlined">my_location</span></button>
+        </div>
+    </section>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant/10 px-6 py-4 flex justify-around items-center z-50">
+    <a href="/user/" class="flex flex-col items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px] uppercase">Home</span></a>
+    <a href="/booking-live/" class="flex flex-col items-center gap-1 text-primary-container"><span class="material-symbols-outlined">trolley</span><span class="text-[10px] uppercase">Bookings</span></a>
+    <a href="/vehicles/" class="flex flex-col items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined">garage</span><span class="text-[10px] uppercase">Fleet</span></a>
+    <button onclick="logout()" class="flex flex-col items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined">logout</span><span class="text-[10px] uppercase">Logout</span></button>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireAuth(["User", "Admin"]);
+
+const storedName = localStorage.getItem("user_name");
+if (storedName) document.getElementById("headerName").textContent = storedName;
+
+const urlParams      = new URLSearchParams(window.location.search);
+const vehicleIdParam = urlParams.get("vehicle_id");
+let selectedVehicleId = vehicleIdParam ? parseInt(vehicleIdParam) : null;
+
+async function loadVehicleDetails() {
+    if (!selectedVehicleId) {
+        document.getElementById("asset-name").textContent     = "No vehicle selected";
+        document.getElementById("asset-price").textContent    = "Choose a vehicle from the Fleet page";
+        document.getElementById("cost-rate").textContent      = "—";
+        document.getElementById("cost-vehicle").textContent   = "—";
+        document.getElementById("cost-capacity").textContent  = "—";
+        document.getElementById("eta-vehicle-name").textContent = "No vehicle selected";
+        showToast("No vehicle selected. Choose one from the Fleet.", "warning");
+        return;
+    }
+    try {
+        const res     = await fetchWithAuth(`/api/vehicles/${selectedVehicleId}/`);
+        const vehicle = await safeJson(res);
+        if (!res.ok || !vehicle.vehicle_id) {
+            showToast("Could not load vehicle details.", "error");
+            return;
+        }
+        document.getElementById("asset-name").textContent       = vehicle.vehicle_type;
+        document.getElementById("asset-price").textContent      = `₹${vehicle.price_per_km} per km`;
+        document.getElementById("cost-rate").textContent        = `₹${vehicle.price_per_km}/km`;
+        document.getElementById("cost-vehicle").textContent     = vehicle.vehicle_type;
+        document.getElementById("cost-capacity").textContent    = vehicle.capacity || "N/A";
+        document.getElementById("eta-vehicle-name").textContent = vehicle.vehicle_type;
+        document.getElementById("eta-driver-name").textContent  = vehicle.driver_name || "Unassigned";
+        const badgeEl       = document.getElementById("asset-badge");
+        badgeEl.textContent = vehicle.status || "available";
+        badgeEl.className   = `badge-${(vehicle.status || "available").toLowerCase()} px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider`;
+    } catch (err) {
+        console.error("Failed to load vehicle:", err);
+        showToast("Error loading vehicle info.", "error");
+    }
+}
+
+document.getElementById("confirm-booking-btn").addEventListener("click", async () => {
+    const pickup = document.getElementById("pickup-location").value.trim();
+    const drop   = document.getElementById("drop-location").value.trim();
+
+    if (!pickup || !drop) {
+        showToast("Please enter both pickup and drop locations.", "warning");
+        return;
+    }
+    if (!selectedVehicleId) {
+        showToast("No vehicle selected. Please go back and select one.", "error");
+        setTimeout(() => window.location.href = "/vehicles/", 1200);
+        return;
+    }
+
+    const btn     = document.getElementById("confirm-booking-btn");
+    const btnText = document.getElementById("confirmBtnText");
+    const spinner = document.getElementById("confirmBtnSpinner");
+    btn.disabled      = true;
+    btnText.textContent = "Confirming…";
+    spinner.classList.remove("hidden");
+
+    try {
+        const res  = await fetchWithAuth("/api/bookings/", {
+            method: "POST",
+            body: JSON.stringify({
+                vehicle:          selectedVehicleId,
+                pickup_location:  pickup,
+                drop_location:    drop,
+            }),
+        });
+        const data = await safeJson(res);
+
+        if (res.ok) {
+            showToast("Booking confirmed! Redirecting to your dashboard…", "success");
+            document.getElementById("eta-status").textContent = "Booking Confirmed ✓";
+            document.getElementById("eta-status").className   = "text-xs text-green-400";
+            setTimeout(() => window.location.href = "/user/", 1500);
+        } else {
+            const msg = data.detail || data.errors?.vehicle?.[0] || JSON.stringify(data);
+            showToast("Booking failed: " + msg, "error");
+        }
+    } catch (err) {
+        console.error("Booking error:", err);
+        showToast("Cannot reach server. Is the backend running?", "error");
+    } finally {
+        btn.disabled        = false;
+        btnText.textContent = "Confirm Booking";
+        spinner.classList.add("hidden");
+    }
+});
+
+loadVehicleDetails();
+</script>
+{% endblock %}

@@ -1,0 +1,627 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Manage Fleet | Digga{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Category cards ── */
+.cat-card {
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+.cat-card:hover {
+    border-color: rgba(0,240,255,0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,240,255,0.12);
+}
+.cat-card.selected {
+    border-color: #00f0ff;
+    background: rgba(0,240,255,0.08) !important;
+    box-shadow: 0 0 20px rgba(0,240,255,0.2);
+}
+.cat-card.selected .cat-icon { color: #00f0ff; }
+.cat-card.selected .cat-label { color: #00f0ff; }
+.cat-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 6px; right: 8px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #00f0ff;
+    background: rgba(0,240,255,0.15);
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+}
+/* ── Subtype chips ── */
+.subtype-chip {
+    cursor: pointer;
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(59,73,75,0.4);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.18s ease;
+    background: rgba(32,31,31,0.6);
+    color: #b9cacb;
+}
+.subtype-chip:hover { border-color: rgba(0,240,255,0.4); color: #e5e2e1; }
+.subtype-chip.selected {
+    background: rgba(0,240,255,0.12);
+    border-color: #00f0ff;
+    color: #00f0ff;
+}
+/* ── Fleet vehicle card ── */
+.fleet-card {
+    background: rgba(32,31,31,0.8);
+    border: 1px solid rgba(59,73,75,0.2);
+    border-radius: 1.25rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+.fleet-card:hover {
+    border-color: rgba(0,240,255,0.2);
+    box-shadow: 0 4px 24px rgba(0,240,255,0.08);
+    transform: translateY(-2px);
+}
+/* ── Image upload zone ── */
+.upload-zone {
+    border: 2px dashed rgba(59,73,75,0.4);
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+    border-color: rgba(0,240,255,0.5);
+    background: rgba(0,240,255,0.04);
+}
+/* ── Status dot ── */
+.online-dot  { background: #69f0ae; box-shadow: 0 0 8px rgba(105,240,174,0.6); }
+.offline-dot { background: #888; }
+.pending-dot { background: #ffe082; box-shadow: 0 0 8px rgba(255,224,130,0.5); }
+/* ── Tab active ── */
+.tab-btn { transition: all 0.2s; }
+.tab-btn.active {
+    color: #00f0ff;
+    border-bottom: 2px solid #00f0ff;
+    background: rgba(0,240,255,0.05);
+}
+/* ── Form input ── */
+.field-input {
+    width: 100%;
+    background: rgba(42,42,42,0.8);
+    border: 1px solid rgba(59,73,75,0.35);
+    border-radius: 0.625rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #e5e2e1;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.field-input:focus { border-color: rgba(0,240,255,0.5); }
+.field-input::placeholder { color: rgba(185,202,203,0.4); }
+.field-label {
+    display: block;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #b9cacb;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-lowest flex flex-col py-8 z-40 border-r border-outline-variant/10">
+    <div class="text-xl font-black text-primary-container px-6 mb-10 font-headline tracking-tighter uppercase">Digga</div>
+    <div class="px-4 mb-8">
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/10">
+            <div class="w-10 h-10 rounded-full bg-primary-container/15 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-primary-container">person</span>
+            </div>
+            <div class="min-w-0">
+                <p id="driverName" class="text-sm font-bold font-headline text-on-surface truncate">Loading…</p>
+                <p class="text-[0.65rem] uppercase tracking-widest text-on-surface-variant">Verified Operator</p>
+            </div>
+        </div>
+    </div>
+    <nav class="flex-1 space-y-1 px-4">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/driver/">
+            <span class="material-symbols-outlined text-sm">dashboard</span>Dashboard
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/request/">
+            <span class="material-symbols-outlined text-sm">calendar_month</span>Requests
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/earning/">
+            <span class="material-symbols-outlined text-sm">payments</span>Earnings
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-white transition-all text-sm font-medium" href="/driver/vehicle/">
+            <span class="material-symbols-outlined text-sm">my_location</span>My Vehicle GPS
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/10 text-primary-container border-r-4 border-primary-container font-medium text-sm transition-all" href="/driver/fleet/">
+            <span class="material-symbols-outlined text-sm">garage</span>Manage Fleet
+        </a>
+    </nav>
+    <div class="px-4 mt-auto pt-8 border-t border-outline-variant/10">
+        <button id="logoutBtn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:opacity-75 transition-all text-sm font-medium w-full">
+            <span class="material-symbols-outlined text-sm">logout</span>Logout
+        </button>
+    </div>
+</aside>
+
+<main class="ml-64 min-h-screen">
+    <!-- Page header -->
+    <div class="px-10 pt-10 pb-6 border-b border-outline-variant/10">
+        <span class="text-[0.6875rem] uppercase tracking-[0.2em] text-on-surface-variant">Driver Portal</span>
+        <h1 class="text-5xl font-headline font-bold tracking-tight mt-1 leading-tight">
+            Fleet <span class="text-primary-container">Management</span>
+        </h1>
+        <p class="text-on-surface-variant text-sm mt-2">Register, manage, and track your construction vehicles.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-outline-variant/10 px-10">
+        <button id="tabFleet" class="tab-btn active px-6 py-4 text-sm font-bold font-headline" onclick="switchTab('fleet')">
+            My Fleet <span id="fleetCountBadge" class="ml-2 bg-primary-container/20 text-primary-container text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+        <button id="tabAdd" class="tab-btn px-6 py-4 text-sm font-bold font-headline text-on-surface-variant" onclick="switchTab('add')">
+            <span id="addTabLabel">Add Vehicle</span>
+        </button>
+    </div>
+
+    <!-- ── My Fleet panel ── -->
+    <section id="panelFleet" class="px-10 py-8">
+        <div id="fleetGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-16 text-on-surface-variant">
+                <div class="spinner mx-auto mb-4"></div>Loading your fleet…
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Add / Edit Vehicle panel ── -->
+    <section id="panelAdd" class="hidden px-10 py-8 max-w-4xl">
+
+        <!-- Step 1 — Category -->
+        <div class="mb-10">
+            <h2 class="text-2xl font-headline font-bold mb-1">Select Vehicle Category</h2>
+            <p class="text-on-surface-variant text-sm mb-6">Choose the category that best describes your vehicle.</p>
+            <div id="categoryGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
+        </div>
+
+        <!-- Step 2 — Subtype -->
+        <div id="subtypeSection" class="mb-10 hidden">
+            <h2 class="text-2xl font-headline font-bold mb-1">Select Subtype</h2>
+            <p class="text-on-surface-variant text-sm mb-4">Pick the specific model type for your vehicle.</p>
+            <div id="subtypeChips" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Step 3 — Form -->
+        <div id="formSection" class="hidden">
+            <h2 class="text-2xl font-headline font-bold mb-6">Vehicle Details</h2>
+
+            <!-- Image upload -->
+            <div class="mb-8">
+                <label class="field-label">Vehicle Photo</label>
+                <div id="uploadZone" class="upload-zone p-8 flex flex-col items-center justify-center text-center relative" onclick="document.getElementById('imageInput').click()">
+                    <img id="imagePreview" class="hidden w-full h-48 object-cover rounded-xl mb-4 absolute inset-0" alt="Preview" style="object-fit:cover;border-radius:.75rem;">
+                    <div id="uploadPrompt">
+                        <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2" style="font-variation-settings:'FILL' 1">add_photo_alternate</span>
+                        <p class="text-sm text-on-surface-variant">Click to upload or drag & drop</p>
+                        <p class="text-xs text-on-surface-variant/50 mt-1">JPG, PNG, WEBP · Max 5 MB</p>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
+                </div>
+            </div>
+
+            <!-- Two-col fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                <div>
+                    <label class="field-label" for="fBrand">Brand / Make</label>
+                    <input id="fBrand" class="field-input" placeholder="e.g. Tata, JCB, Mahindra">
+                </div>
+                <div>
+                    <label class="field-label" for="fModel">Model Name</label>
+                    <input id="fModel" class="field-input" placeholder="e.g. Prima 4928, 3DX">
+                </div>
+                <div>
+                    <label class="field-label" for="fPlate">Number Plate</label>
+                    <input id="fPlate" class="field-input" placeholder="e.g. MP09 AB 1234" oninput="this.value=this.value.toUpperCase()">
+                </div>
+                <div>
+                    <label class="field-label" for="fCapacity">Capacity (tons / units)</label>
+                    <input id="fCapacity" type="number" min="1" class="field-input" placeholder="e.g. 10">
+                </div>
+                <div>
+                    <label class="field-label" for="fPrice">Price per KM (₹)</label>
+                    <input id="fPrice" type="number" step="0.5" min="1" class="field-input" placeholder="e.g. 35">
+                </div>
+                <div class="flex items-center gap-4 pt-6">
+                    <label class="field-label mb-0">Available Now</label>
+                    <button type="button" id="availToggle"
+                        class="relative inline-flex h-7 w-14 rounded-full transition-colors duration-200 bg-primary-container focus:outline-none"
+                        onclick="toggleAvailability()" role="switch" aria-checked="true">
+                        <span id="availThumb" class="inline-block h-5 w-5 rounded-full bg-on-primary shadow-md transform transition-transform duration-200 translate-x-8 mt-1"></span>
+                    </button>
+                    <span id="availLabel" class="text-xs font-bold text-green-400">YES</span>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="field-label" for="fDesc">Description (optional)</label>
+                <textarea id="fDesc" class="field-input" rows="3" placeholder="Any additional details about the vehicle, condition, special equipment…"></textarea>
+            </div>
+
+            <div class="flex gap-4">
+                <button type="button" onclick="resetForm()" class="px-6 py-3 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high text-sm font-bold transition-all">
+                    Reset
+                </button>
+                <button type="button" id="submitBtn" onclick="submitVehicle()"
+                    class="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary-fixed-dim to-primary-container text-on-primary font-bold text-sm shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <span id="submitBtnText">Register Vehicle</span>
+                    <span id="submitSpinner" class="spinner hidden"></span>
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireAuth(["Driver"]);
+document.getElementById("driverName").textContent = localStorage.getItem("user_name") || "Driver";
+document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+// ── State ──────────────────────────────────────────────────────────────
+let selectedCategory = null;
+let selectedSubtype  = null;
+let isAvailable      = true;
+let editingId        = null;  // null = create, number = edit mode
+
+// ── Category + Subtype data ─────────────────────────────────────────────
+const CATEGORIES = [
+    { key: "micro_truck",  label: "Micro Truck",  icon: "local_shipping",    color: "#00f0ff" },
+    { key: "mini_truck",   label: "Mini Truck",   icon: "local_shipping",    color: "#00dbe9" },
+    { key: "pickup_truck", label: "Pickup Truck", icon: "airport_shuttle",   color: "#dcb8ff" },
+    { key: "light_truck",  label: "Light Truck",  icon: "fire_truck",        color: "#69f0ae" },
+    { key: "medium_truck", label: "Medium Truck", icon: "local_shipping",    color: "#00f0ff" },
+    { key: "heavy_truck",  label: "Heavy Truck",  icon: "local_shipping",    color: "#ffe082" },
+    { key: "trailer",      label: "Trailer",      icon: "rv_hookup",         color: "#ffb4ab" },
+    { key: "flatbed",      label: "Flatbed",      icon: "rv_hookup",         color: "#dcb8ff" },
+    { key: "dumper",       label: "Dumper",       icon: "construction",      color: "#ffe082" },
+    { key: "jcb",          label: "JCB",          icon: "construction",      color: "#ffb4ab" },
+    { key: "excavator",    label: "Excavator",    icon: "engineering",       color: "#69f0ae" },
+    { key: "tractor",      label: "Tractor",      icon: "agriculture",       color: "#00f0ff" },
+];
+
+const SUBTYPES = {
+    micro_truck:  ["Tata Ace", "Mahindra Jeeto", "Ashok Leyland DOST", "Bajaj Maxima"],
+    mini_truck:   ["Tata 407", "Ashok Leyland Partner", "Mahindra Maximo", "Eicher 10.90 Light"],
+    pickup_truck: ["Tata Xenon", "Mahindra Bolero Pickup", "Isuzu D-Max", "Tata Yodha"],
+    light_truck:  ["Tata 709", "Eicher 10.90", "Ashok Leyland 1212", "BharatBenz 1017"],
+    medium_truck: ["Tata 1109", "Eicher Pro 3015", "BharatBenz 1217", "Ashok Leyland 2518"],
+    heavy_truck:  ["Tata Prima", "Ashok Leyland 4923", "Volvo FH", "BharatBenz 4228", "MAN TGS"],
+    trailer:      ["Tata LPS 4923", "Ashok Leyland 6×2", "Volvo FM", "Scania R"],
+    flatbed:      ["Tata 2518", "Eicher Pro 8035", "BharatBenz 2823", "Mahindra Blazo"],
+    dumper:       ["Tata 2518 Tipper", "Ashok Leyland 2518H", "BEML BH60E", "Komatsu HD325"],
+    jcb:          ["JCB 3DX", "JCB 4DX", "JCB 3CX", "JCB JS205"],
+    excavator:    ["CAT 320", "Komatsu PC200", "Hitachi ZX200", "JCB JS205", "Doosan DX300"],
+    tractor:      ["John Deere 5050", "Mahindra 575", "Swaraj 735", "Eicher 548", "New Holland 3600"],
+};
+
+// ── Render Category Grid ─────────────────────────────────────────────────
+function renderCategories() {
+    const grid = document.getElementById("categoryGrid");
+    grid.innerHTML = CATEGORIES.map(c => `
+        <div class="cat-card bg-surface-container-high/60 rounded-xl p-3 flex flex-col items-center gap-2 text-center"
+             id="cat-${c.key}" onclick="selectCategory('${c.key}')">
+            <span class="material-symbols-outlined cat-icon text-3xl text-on-surface-variant transition-colors"
+                  style="font-variation-settings:'FILL' 1">${c.icon}</span>
+            <span class="cat-label text-[0.6rem] font-bold uppercase tracking-wide text-on-surface-variant leading-tight transition-colors">${c.label}</span>
+        </div>
+    `).join("");
+}
+
+function selectCategory(key) {
+    selectedCategory = key;
+    selectedSubtype  = null;
+    document.querySelectorAll(".cat-card").forEach(el => el.classList.remove("selected"));
+    document.getElementById(`cat-${key}`).classList.add("selected");
+    renderSubtypes(key);
+    document.getElementById("subtypeSection").classList.remove("hidden");
+    document.getElementById("formSection").classList.add("hidden");
+    document.getElementById("subtypeSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function renderSubtypes(catKey) {
+    const container = document.getElementById("subtypeChips");
+    const list      = SUBTYPES[catKey] || [];
+    container.innerHTML = list.map(s => `
+        <span class="subtype-chip" onclick="selectSubtype('${s}', this)">${s}</span>
+    `).join("");
+}
+
+function selectSubtype(name, el) {
+    selectedSubtype = name;
+    document.querySelectorAll(".subtype-chip").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    document.getElementById("formSection").classList.remove("hidden");
+    document.getElementById("formSection").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ── Availability Toggle ──────────────────────────────────────────────────
+function toggleAvailability() {
+    isAvailable = !isAvailable;
+    const btn   = document.getElementById("availToggle");
+    const thumb = document.getElementById("availThumb");
+    const label = document.getElementById("availLabel");
+    if (isAvailable) {
+        btn.className   = "relative inline-flex h-7 w-14 rounded-full transition-colors duration-200 bg-primary-container focus:outline-none";
+        thumb.className = "inline-block h-5 w-5 rounded-full bg-on-primary shadow-md transform transition-transform duration-200 translate-x-8 mt-1";
+        label.textContent = "YES"; label.className = "text-xs font-bold text-green-400";
+    } else {
+        btn.className   = "relative inline-flex h-7 w-14 rounded-full transition-colors duration-200 bg-surface-container-high border border-outline-variant/30 focus:outline-none";
+        thumb.className = "inline-block h-5 w-5 rounded-full bg-on-surface-variant shadow-md transform transition-transform duration-200 translate-x-1 mt-1";
+        label.textContent = "NO"; label.className = "text-xs font-bold text-on-surface-variant";
+    }
+}
+
+// ── Image Upload ─────────────────────────────────────────────────────────
+document.getElementById("imageInput").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast("Image too large (max 5 MB).", "warning"); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const img = document.getElementById("imagePreview");
+        img.src   = ev.target.result;
+        img.classList.remove("hidden");
+        document.getElementById("uploadPrompt").style.opacity = "0";
+    };
+    reader.readAsDataURL(file);
+});
+
+const zone = document.getElementById("uploadZone");
+zone.addEventListener("dragover",  e => { e.preventDefault(); zone.classList.add("drag-over"); });
+zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+zone.addEventListener("drop",      e => {
+    e.preventDefault(); zone.classList.remove("drag-over");
+    const dt = e.dataTransfer;
+    if (dt.files.length) document.getElementById("imageInput").files = dt.files, document.getElementById("imageInput").dispatchEvent(new Event("change"));
+});
+
+// ── Submit / Edit Vehicle ─────────────────────────────────────────────────
+async function submitVehicle() {
+    if (!selectedCategory) { showToast("Please select a vehicle category.", "warning"); return; }
+    if (!selectedSubtype)  { showToast("Please select a subtype.", "warning");  return; }
+
+    const brand    = document.getElementById("fBrand").value.trim();
+    const model    = document.getElementById("fModel").value.trim();
+    const plate    = document.getElementById("fPlate").value.trim();
+    const capacity = document.getElementById("fCapacity").value.trim();
+    const price    = document.getElementById("fPrice").value.trim();
+    const desc     = document.getElementById("fDesc").value.trim();
+    const imgFile  = document.getElementById("imageInput").files[0];
+
+    if (!brand || !model || !plate || !capacity || !price) {
+        showToast("Please fill all required fields.", "warning"); return;
+    }
+
+    const btn  = document.getElementById("submitBtn");
+    const text = document.getElementById("submitBtnText");
+    const spin = document.getElementById("submitSpinner");
+    btn.disabled = true; text.textContent = editingId ? "Updating…" : "Registering…"; spin.classList.remove("hidden");
+
+    const token = localStorage.getItem("access_token");
+    const fd    = new FormData();
+    fd.append("category",     selectedCategory);
+    fd.append("subtype",      selectedSubtype);
+    fd.append("brand",        brand);
+    fd.append("model_name",   model);
+    fd.append("number_plate", plate);
+    fd.append("capacity",     parseInt(capacity));
+    fd.append("price_per_km", parseFloat(price));
+    fd.append("is_available", isAvailable ? "true" : "false");
+    if (desc)    fd.append("description", desc);
+    if (imgFile) fd.append("image", imgFile);
+
+    try {
+        const url    = editingId ? `/api/driver/vehicles/${editingId}/` : "/api/driver/vehicles/";
+        const method = editingId ? "PUT" : "POST";
+        const res    = await fetch(url, {
+            method,
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "X-CSRFToken": getCookie("csrftoken") || "",
+            },
+            body: fd,
+        });
+        const data = await safeJson(res);
+        if (res.ok) {
+            showToast(editingId ? "Vehicle updated!" : "Vehicle registered! Pending admin verification.", "success");
+            resetForm();
+            switchTab("fleet");
+            loadFleet();
+        } else {
+            const msg = data.number_plate?.[0] || data.detail || JSON.stringify(data);
+            showToast("Error: " + msg, "error");
+        }
+    } catch (err) {
+        showToast("Network error. Is the server running?", "error");
+    } finally {
+        btn.disabled = false; text.textContent = editingId ? "Update Vehicle" : "Register Vehicle"; spin.classList.add("hidden");
+    }
+}
+
+function resetForm() {
+    editingId        = null;
+    selectedCategory = null;
+    selectedSubtype  = null;
+    isAvailable      = true;
+
+    document.querySelectorAll(".cat-card").forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll(".subtype-chip").forEach(el => el.classList.remove("selected"));
+    document.getElementById("subtypeSection").classList.add("hidden");
+    document.getElementById("formSection").classList.add("hidden");
+
+    ["fBrand", "fModel", "fPlate", "fCapacity", "fPrice", "fDesc"].forEach(id => {
+        document.getElementById(id).value = "";
+    });
+    document.getElementById("imageInput").value = "";
+    document.getElementById("imagePreview").classList.add("hidden");
+    document.getElementById("uploadPrompt").style.opacity = "1";
+
+    if (!isAvailable) toggleAvailability();
+    document.getElementById("submitBtnText").textContent = "Register Vehicle";
+    document.getElementById("addTabLabel").textContent   = "Add Vehicle";
+}
+
+// ── Load My Fleet ─────────────────────────────────────────────────────────
+async function loadFleet() {
+    const container = document.getElementById("fleetGrid");
+    container.innerHTML = `<div class="col-span-full text-center py-16 text-on-surface-variant"><div class="spinner mx-auto mb-4"></div>Loading…</div>`;
+
+    const res     = await fetchWithAuth("/api/driver/vehicles/");
+    const vehicles = await safeJson(res);
+
+    document.getElementById("fleetCountBadge").textContent = Array.isArray(vehicles) ? vehicles.length : 0;
+
+    if (!Array.isArray(vehicles) || !vehicles.length) {
+        container.innerHTML = `
+            <div class="col-span-full text-center py-20 text-on-surface-variant">
+                <span class="material-symbols-outlined text-6xl block mb-4 opacity-20" style="font-variation-settings:'FILL' 1">garage</span>
+                <p class="text-lg font-headline font-bold mb-2">No vehicles yet</p>
+                <p class="text-sm mb-6">Register your first vehicle to start accepting bookings.</p>
+                <button onclick="switchTab('add')" class="px-6 py-3 bg-primary-container text-on-primary font-bold rounded-xl text-sm hover:brightness-110 active:scale-95 transition-all">
+                    Add Your First Vehicle
+                </button>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = vehicles.map(v => {
+        const catObj    = CATEGORIES.find(c => c.key === v.category) || {};
+        const dotClass  = v.is_verified ? (v.is_available ? "online-dot" : "offline-dot") : "pending-dot";
+        const dotLabel  = v.is_verified ? (v.is_available ? "Available" : "Offline") : "Pending Review";
+        const dotColor  = v.is_verified ? (v.is_available ? "text-green-400" : "text-on-surface-variant") : "text-yellow-400";
+        return `
+        <div class="fleet-card group">
+            <div class="relative h-44 bg-surface-container-high overflow-hidden flex items-center justify-center">
+                ${v.image_url
+                    ? `<img src="${v.image_url}" alt="${v.brand} ${v.model_name}" class="w-full h-full object-cover">`
+                    : `<span class="material-symbols-outlined text-7xl text-on-surface-variant/20" style="font-variation-settings:'FILL' 1">${catObj.icon || "local_shipping"}</span>`
+                }
+                <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-surface-container-lowest/80 backdrop-blur-md px-2.5 py-1 rounded-full">
+                    <span class="w-2 h-2 rounded-full ${dotClass}"></span>
+                    <span class="text-[0.6rem] font-bold uppercase tracking-widest ${dotColor}">${dotLabel}</span>
+                </div>
+                ${v.is_verified ? '' : '<div class="absolute top-3 right-3 bg-yellow-400/20 text-yellow-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-yellow-400/30">AWAITING VERIFICATION</div>'}
+            </div>
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-headline font-bold text-on-surface">${v.brand} ${v.model_name}</h3>
+                        <p class="text-xs text-on-surface-variant mt-0.5">${v.category_display || v.category} · ${v.subtype}</p>
+                    </div>
+                    <span class="font-headline font-bold text-primary-container">₹${v.price_per_km}<span class="text-[10px] text-on-surface-variant font-normal">/km</span></span>
+                </div>
+                <div class="flex gap-4 text-xs text-on-surface-variant mb-4">
+                    <div class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">confirmation_number</span>${v.number_plate}</div>
+                    <div class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">weight</span>${v.capacity} tons</div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="editVehicle(${JSON.stringify(v).replace(/"/g,'&quot;')})" class="flex-1 py-2 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-xs">edit</span>Edit
+                    </button>
+                    <button onclick="deleteVehicle(${v.id})" class="py-2 px-3 rounded-lg border border-error/30 text-error hover:bg-error/10 text-xs font-bold transition-all flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-xs">delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join("");
+}
+
+// ── Edit Vehicle ──────────────────────────────────────────────────────────
+function editVehicle(v) {
+    editingId = v.id;
+    switchTab("add");
+
+    // Restore category
+    if (v.category) {
+        const catKey = CATEGORIES.find(c => c.key === v.category || c.label === v.category_display)?.key || v.category;
+        selectedCategory = catKey;
+        document.querySelectorAll(".cat-card").forEach(el => el.classList.remove("selected"));
+        const catEl = document.getElementById(`cat-${catKey}`);
+        if (catEl) catEl.classList.add("selected");
+        renderSubtypes(catKey);
+        document.getElementById("subtypeSection").classList.remove("hidden");
+    }
+
+    // Restore subtype
+    if (v.subtype) {
+        selectedSubtype = v.subtype;
+        document.querySelectorAll(".subtype-chip").forEach(chip => {
+            if (chip.textContent.trim() === v.subtype) chip.classList.add("selected");
+        });
+        document.getElementById("formSection").classList.remove("hidden");
+    }
+
+    document.getElementById("fBrand").value    = v.brand    || "";
+    document.getElementById("fModel").value    = v.model_name || "";
+    document.getElementById("fPlate").value    = v.number_plate || "";
+    document.getElementById("fCapacity").value = v.capacity  || "";
+    document.getElementById("fPrice").value    = v.price_per_km || "";
+    document.getElementById("fDesc").value     = v.description || "";
+
+    if (v.image_url) {
+        const img = document.getElementById("imagePreview");
+        img.src   = v.image_url;
+        img.classList.remove("hidden");
+        document.getElementById("uploadPrompt").style.opacity = "0";
+    }
+
+    isAvailable = v.is_available;
+    if (!isAvailable) {
+        // Force toggle to OFF visually
+        const btn   = document.getElementById("availToggle");
+        const thumb = document.getElementById("availThumb");
+        const label = document.getElementById("availLabel");
+        btn.className   = "relative inline-flex h-7 w-14 rounded-full transition-colors duration-200 bg-surface-container-high border border-outline-variant/30 focus:outline-none";
+        thumb.className = "inline-block h-5 w-5 rounded-full bg-on-surface-variant shadow-md transform transition-transform duration-200 translate-x-1 mt-1";
+        label.textContent = "NO"; label.className = "text-xs font-bold text-on-surface-variant";
+    }
+
+    document.getElementById("submitBtnText").textContent = "Update Vehicle";
+    document.getElementById("addTabLabel").textContent   = "Edit Vehicle";
+    document.getElementById("formSection").scrollIntoView({ behavior: "smooth" });
+}
+
+// ── Delete Vehicle ────────────────────────────────────────────────────────
+async function deleteVehicle(id) {
+    if (!confirm("Delete this vehicle? This action cannot be undone.")) return;
+    const res = await fetchWithAuth(`/api/driver/vehicles/${id}/`, { method: "DELETE" });
+    if (res.ok || res.status === 204) { showToast("Vehicle removed.", "info"); loadFleet(); }
+    else { const d = await safeJson(res); showToast(d.detail || "Failed to delete.", "error"); }
+}
+
+// ── Tab switch ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    document.getElementById("panelFleet").classList.toggle("hidden", tab !== "fleet");
+    document.getElementById("panelAdd").classList.toggle("hidden",   tab !== "add");
+    document.getElementById("tabFleet").classList.toggle("active",   tab === "fleet");
+    document.getElementById("tabAdd").classList.toggle("active",     tab === "add");
+    document.getElementById("tabFleet").classList.toggle("text-on-surface-variant", tab !== "fleet");
+    document.getElementById("tabAdd").classList.toggle("text-on-surface-variant",   tab !== "add");
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderCategories();
+loadFleet();
+</script>
+{% endblock %}

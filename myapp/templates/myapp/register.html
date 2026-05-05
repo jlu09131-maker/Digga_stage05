@@ -1,0 +1,88 @@
+{% extends "myapp/base.html" %}
+{% load static %}
+{% block title %}Digga — Create Account{% endblock %}
+
+{% block content %}
+<div class="bg-titanium-flux">
+    <div class="flux-orb w-[60vw] h-[60vw] bg-blue-900 top-[-10%] left-[-10%]"></div>
+    <div class="flux-orb w-[50vw] h-[50vw] bg-purple-900 bottom-[-10%] right-[-10%]" style="animation-delay:-5s"></div>
+</div>
+
+<main class="relative z-10 min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="font-headline text-3xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-primary-container" style="font-size:2rem">electric_bolt</span>
+                Digga
+            </h1>
+            <p class="text-on-surface-variant text-sm mt-2">Create your operator account.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden">
+            <div class="flex border-b border-white/5">
+                <a href="/login-page/" class="flex-1 py-4 text-sm font-headline font-medium text-on-surface-variant hover:text-white transition-all text-center">Login</a>
+                <button class="flex-1 py-4 text-sm font-headline font-semibold tab-active">Register</button>
+            </div>
+
+            <form id="registerForm" class="p-8 space-y-4" novalidate>
+                {% csrf_token %}
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Full Name</label>
+                    <input id="name" type="text" required autocomplete="name"
+                           class="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary-container transition-all"
+                           placeholder="John Doe">
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Email Address</label>
+                    <input id="email" type="email" required autocomplete="email"
+                           class="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary-container transition-all"
+                           placeholder="you@example.com">
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Mobile Number</label>
+                    <input id="mobile" type="tel" required autocomplete="tel"
+                           class="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary-container transition-all"
+                           placeholder="+91 98765 43210">
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Password</label>
+                    <div class="relative">
+                        <input id="password" type="password" required autocomplete="new-password" minlength="8"
+                               class="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-4 pr-10 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary-container transition-all"
+                               placeholder="Min. 8 characters">
+                        <button type="button" id="togglePwd"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-white transition-all">
+                            <span class="material-symbols-outlined" style="font-size:1rem">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-semibold mb-1 block">Account Role</label>
+                    <select id="role"
+                            class="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-sm text-white focus:outline-none focus:border-primary-container transition-all appearance-none">
+                        <option value="User">User — Book vehicles</option>
+                        <option value="Driver">Driver — Operate fleet</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                        class="w-full bg-primary-container text-on-primary font-headline font-bold py-4 rounded-lg shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:brightness-110 active:scale-[0.98] transition-all mt-2 flex items-center justify-center gap-2">
+                    <span id="btnText">CREATE ACCOUNT</span>
+                    <span id="btnSpinner" class="spinner hidden"></span>
+                </button>
+
+                <p class="text-center text-sm text-on-surface-variant pt-1">
+                    Already have an account?
+                    <a href="/login-page/" class="text-primary-container hover:underline ml-1">Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script src="{% static 'myapp/js/register.js' %}"></script>
+{% endblock %}
