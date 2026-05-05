@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -57,15 +58,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "myorg.wsgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "digga_system",
-        "USER": "root",
-        "PASSWORD": "Ussh4fm7cr",
-        "HOST": "localhost",
-        "PORT": "3307",
-        "OPTIONS": {"charset": "utf8mb4"},
-    }
+    "default": dj_database_url.parse(
+        os.environ.get("DATABASE_URL")
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
